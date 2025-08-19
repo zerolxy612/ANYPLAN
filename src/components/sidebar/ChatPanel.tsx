@@ -209,9 +209,9 @@ const ChatPanel = () => {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-top: 12px;
+          // margin-top: 12px;
           padding-top: 12px;
-          border-top: 1px solid #404040;
+          // border-top: 1px solid #404040;
         }
 
         .model-info {

@@ -46,7 +46,6 @@ function CanvasComponent({ className }: CanvasProps) {
   } = useCanvasStore();
   
   const {
-    autoLayout,
     fitView,
     addNode,
   } = useCanvasActions();
@@ -143,13 +142,35 @@ function CanvasComponent({ className }: CanvasProps) {
   );
 
   return (
-    <div 
-      ref={reactFlowWrapper} 
-      className={`canvas-container ${className || ''}`}
-      onKeyDown={onKeyDown}
-      tabIndex={0}
-    >
-      <ReactFlow
+    <div className={`canvas-wrapper ${className || ''}`}>
+      {/* 层级条 */}
+      <div style={{
+        width: '100%',
+        height: '80px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 20px'
+      }}>
+        <div style={{
+          width: '90%',
+          height: '60px',
+          backgroundColor: '#2a292c',
+          borderRadius: '30px',
+          border: '1px solid #404040'
+        }}>
+          {/* 空的层级条容器，等待用户操作后显示内容 */}
+        </div>
+      </div>
+
+      {/* 画布区域 */}
+      <div
+        ref={reactFlowWrapper}
+        className="canvas-container"
+        onKeyDown={onKeyDown}
+        tabIndex={0}
+      >
+        <ReactFlow
         nodes={reactFlowNodes}
         edges={reactFlowEdges}
         onNodesChange={onNodesChange}
@@ -178,41 +199,7 @@ function CanvasComponent({ className }: CanvasProps) {
           showFitView={true}
           showInteractive={true}
         />
-        
-        {/* 工具栏 */}
-        <Panel position="top-left" className="canvas-toolbar">
-          <div className="toolbar-group">
-            <button
-              onClick={() => autoLayout('dagre')}
-              className="toolbar-btn"
-              title="自动布局"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M3 3h18v18H3V3zm2 2v14h14V5H5z" fill="currentColor"/>
-              </svg>
-            </button>
-            
-            <button
-              onClick={() => autoLayout('level')}
-              className="toolbar-btn"
-              title="层级布局"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" fill="currentColor"/>
-              </svg>
-            </button>
-            
-            <button
-              onClick={fitView}
-              className="toolbar-btn"
-              title="适应视图"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M3 3h6v6H3V3zm12 0h6v6h-6V3zM3 15h6v6H3v-6zm12 0h6v6h-6v-6z" fill="currentColor"/>
-              </svg>
-            </button>
-          </div>
-        </Panel>
+
         
         {/* 加载状态 */}
         {loading.isGenerating && (
@@ -239,7 +226,8 @@ function CanvasComponent({ className }: CanvasProps) {
           </Panel>
         )}
       </ReactFlow>
-      
+      </div>
+
       <style jsx>{`
         .canvas-container {
           width: 100%;
@@ -248,36 +236,7 @@ function CanvasComponent({ className }: CanvasProps) {
           outline: none;
         }
         
-        .canvas-toolbar {
-          background: white;
-          border-radius: 8px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          padding: 8px;
-        }
-        
-        .toolbar-group {
-          display: flex;
-          gap: 4px;
-        }
-        
-        .toolbar-btn {
-          width: 32px;
-          height: 32px;
-          border: none;
-          background: transparent;
-          border-radius: 4px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          color: #6b7280;
-          transition: all 0.2s ease;
-        }
-        
-        .toolbar-btn:hover {
-          background: #f3f4f6;
-          color: #374151;
-        }
+
         
         .loading-panel {
           background: white;
@@ -332,6 +291,19 @@ function CanvasComponent({ className }: CanvasProps) {
           line-height: 1;
           padding: 0;
           margin-left: 8px;
+        }
+
+        .canvas-wrapper {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .canvas-container {
+          flex: 1;
+          width: 100%;
+          height: 100%;
         }
       `}</style>
     </div>
