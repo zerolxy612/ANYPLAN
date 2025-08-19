@@ -107,15 +107,21 @@ export const COLORS = {
   textMuted: '#9ca3af',
 } as const;
 
-// 层级颜色
+// 层级颜色 - 按照PRD要求的背景色规则
 export const LEVEL_COLORS = [
-  '#3b82f6', // Level 1 - 蓝色
-  '#10b981', // Level 2 - 绿色
-  '#f59e0b', // Level 3 - 橙色
-  '#ef4444', // Level 4 - 红色
-  '#8b5cf6', // Level 5 - 紫色
-  '#06b6d4', // Level 6 - 青色
+  '#161618', // Level 0 - 原始内容
+  '#262627', // Level 1 - L1
+  '#161618', // Level 2 - L2
+  '#262627', // Level 3 - L3
+  '#161618', // Level 4 - L4
+  '#262627', // Level 5 - L5
 ] as const;
+
+// 获取节点背景色的函数
+export const getNodeBackgroundColor = (level: number): string => {
+  if (level === 0) return '#161618'; // 原始内容
+  return level % 2 === 1 ? '#262627' : '#161618';
+};
 
 // 快捷键
 export const SHORTCUTS = {

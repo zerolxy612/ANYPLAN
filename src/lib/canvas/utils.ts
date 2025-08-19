@@ -1,5 +1,5 @@
 import { CanvasNode, CanvasEdge, NodePosition, Viewport } from '@/types/canvas';
-import { NODE_DIMENSIONS, CANVAS_CONFIG, LEVEL_COLORS } from './constants';
+import { NODE_DIMENSIONS, CANVAS_CONFIG, getNodeBackgroundColor } from './constants';
 
 // 生成唯一ID
 export function generateId(prefix: string = 'node'): string {
@@ -41,9 +41,9 @@ export function calculateNodePosition(
   };
 }
 
-// 获取层级颜色
+// 获取层级颜色 - 使用PRD规定的背景色规则
 export function getLevelColor(level: number): string {
-  return LEVEL_COLORS[level % LEVEL_COLORS.length];
+  return getNodeBackgroundColor(level);
 }
 
 // 创建关键词节点

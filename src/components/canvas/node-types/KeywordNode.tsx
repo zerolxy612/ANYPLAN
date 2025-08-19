@@ -51,10 +51,10 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     <div
       className="keyword-node"
       style={{
-        borderColor: selected ? levelColor : '#e2e8f0',
+        borderColor: selected ? '#65f0a3' : '#404040',
         borderWidth: selected ? '2px' : '1px',
-        backgroundColor: isHovered ? '#f8fafc' : '#ffffff',
-        boxShadow: selected ? `0 0 0 2px ${levelColor}20` : '0 1px 3px rgba(0, 0, 0, 0.1)',
+        backgroundColor: levelColor,
+        boxShadow: selected ? `0 0 0 2px #65f0a320` : '0 1px 3px rgba(0, 0, 0, 0.3)',
       }}
       onMouseEnter={() => {
         setIsHovered(true);
@@ -181,7 +181,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           text-align: center;
           font-size: 14px;
           line-height: 1.4;
-          color: #374151;
+          color: #ffffff;
           word-break: break-word;
         }
         
@@ -191,14 +191,14 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(255, 255, 255, 0.9);
+          background: rgba(0, 0, 0, 0.7);
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           border-radius: 8px;
           font-size: 12px;
-          color: #6b7280;
+          color: #ffffff;
         }
         
         .loading-spinner {

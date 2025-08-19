@@ -14,22 +14,39 @@ import {
   AIAnalysisResult,
   KeywordNodeData
 } from '@/types/canvas';
-// AI 辅助函数
+import { geminiService } from '@/lib/ai/gemini';
+import { CHATBOT_RESPONSE_TEMPLATE } from '@/lib/ai/prompts';
+// AI 辅助函数 - 使用真实的 Gemini API
 const analyzeUserInput = async (userInput: string) => {
-  // 模拟AI分析结果
-  return {
-    levelCount: 3,
-    levels: [
-      { level: 1, label: 'L1', description: '表层探索', isActive: true, nodeCount: 2 },
-      { level: 2, label: 'L2', description: '具体原因', isActive: false, nodeCount: 0 },
-      { level: 3, label: 'L3', description: '解决方案', isActive: false, nodeCount: 0 }
-    ],
-    initialNodes: [
-      { level: 1, content: '问题的表面现象', hasChildren: true },
-      { level: 1, content: '相关影响因素', hasChildren: true }
-    ],
-    originalPrompt: userInput
-  };
+  try {
+    const result = await geminiService.analyzeAndGenerateLevels({ userInput });
+    return {
+      levelCount: result.levelCount,
+      levels: result.levels.map(level => ({
+        ...level,
+        isActive: level.level === 1,
+        nodeCount: level.level === 1 ? result.initialNodes.length : 0
+      })),
+      initialNodes: result.initialNodes,
+      originalPrompt: userInput
+    };
+  } catch (error) {
+    console.error('AI analysis failed, using fallback:', error);
+    // 降级处理：返回默认结构
+    return {
+      levelCount: 3,
+      levels: [
+        { level: 1, label: 'L1', description: '表层探索', isActive: true, nodeCount: 2 },
+        { level: 2, label: 'L2', description: '具体原因', isActive: false, nodeCount: 0 },
+        { level: 3, label: 'L3', description: '解决方案', isActive: false, nodeCount: 0 }
+      ],
+      initialNodes: [
+        { level: 1, content: '问题的表面现象', hasChildren: true },
+        { level: 1, content: '相关影响因素', hasChildren: true }
+      ],
+      originalPrompt: userInput
+    };
+  }
 };
 
 const expandNodeContent = async (
@@ -38,25 +55,32 @@ const expandNodeContent = async (
   parentContext: string,
   userPrompt: string
 ) => {
-  // 使用参数避免未使用警告
-  console.log('Expanding node:', { nodeContent, nodeLevel, parentContext, userPrompt });
-  // 模拟节点扩展结果
-  return {
-    children: [
-      { content: `${nodeContent} - 子项1`, level: nodeLevel + 1, hasChildren: true },
-      { content: `${nodeContent} - 子项2`, level: nodeLevel + 1, hasChildren: true }
-    ]
-  };
+  try {
+    const result = await geminiService.expandNode({
+      nodeContent,
+      nodeLevel,
+      parentContext,
+      userPrompt
+    });
+    return result;
+  } catch (error) {
+    console.error('Node expansion failed, using fallback:', error);
+    // 降级处理：返回默认子节点
+    return {
+      children: [
+        { content: `${nodeContent} - 子项1`, level: nodeLevel + 1, hasChildren: true },
+        { content: `${nodeContent} - 子项2`, level: nodeLevel + 1, hasChildren: true }
+      ]
+    };
+  }
 };
 
 const generateChatBotResponse = (levelCount: number): string => {
-  return `已根据关键词为您准备好${levelCount}个层级的基础构建模型，您可根据需求调整生成的层级。点击箭头以生成下一级内容。`;
+  return CHATBOT_RESPONSE_TEMPLATE(levelCount);
 };
 
-const getNodeBackgroundColor = (level: number): string => {
-  if (level === 0) return '#161618'; // 原始内容
-  return level % 2 === 1 ? '#262627' : '#161618';
-};
+// 使用constants中的函数
+import { getNodeBackgroundColor } from '@/lib/canvas/constants';
 
 interface CanvasStore {
   // 核心数据

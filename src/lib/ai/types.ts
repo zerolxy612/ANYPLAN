@@ -64,6 +64,11 @@ export interface LevelGenerationResult {
   }[];
 }
 
+// AI分析结果（包含原始问题）
+export interface AIAnalysisResult extends LevelGenerationResult {
+  originalPrompt: string;
+}
+
 // AI节点扩展请求
 export interface NodeExpansionRequest {
   nodeContent: string;

@@ -19,6 +19,7 @@ import { useCanvasStore } from '@/store/canvas.store';
 import { useCanvasActions } from './hooks/useCanvasActions';
 import KeywordNode from './node-types/KeywordNode';
 import DefaultEdge from './edges/DefaultEdge';
+import LevelBar from './LevelBar';
 
 // 节点类型映射
 const nodeTypes = {
@@ -45,6 +46,9 @@ function CanvasComponent({ className }: CanvasProps) {
     config,
     loading,
     error,
+    levels,
+    currentLevel,
+    setCurrentLevel,
   } = useCanvasStore();
 
   const {
@@ -139,24 +143,40 @@ function CanvasComponent({ className }: CanvasProps) {
   return (
     <div className={`canvas-wrapper ${className || ''}`}>
       {/* 层级条 */}
-      <div style={{
-        width: '100%',
-        height: '80px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '0 20px'
-      }}>
+      {levels.length > 0 ? (
+        <LevelBar
+          levels={levels}
+          currentLevel={currentLevel}
+          onLevelClick={(levelId) => {
+            const level = parseInt(levelId.replace('L', ''));
+            setCurrentLevel(level);
+          }}
+        />
+      ) : (
         <div style={{
-          width: '90%',
-          height: '60px',
-          backgroundColor: '#2a292c',
-          borderRadius: '30px',
-          border: '1px solid #404040'
+          width: '100%',
+          height: '80px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 20px'
         }}>
-          {/* 空的层级条容器，等待用户操作后显示内容 */}
+          <div style={{
+            width: '90%',
+            height: '60px',
+            backgroundColor: '#2a292c',
+            borderRadius: '30px',
+            border: '1px solid #404040',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#a1a1aa',
+            fontSize: '14px'
+          }}>
+            请在右侧输入问题开始探索
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 画布区域 */}
       <div

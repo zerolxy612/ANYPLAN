@@ -1,50 +1,48 @@
-// AI服务主入口文件
+// AI服务统一导出
 
-// 临时模拟函数，避免循环依赖
-export const analyzeUserInput = async (userInput: string) => {
-  // 模拟AI分析结果
-  return {
-    levelCount: 3,
-    levels: [
-      { level: 1, label: 'L1', description: '表层探索', isActive: true, nodeCount: 2 },
-      { level: 2, label: 'L2', description: '具体原因', isActive: false, nodeCount: 0 },
-      { level: 3, label: 'L3', description: '解决方案', isActive: false, nodeCount: 0 }
-    ],
-    initialNodes: [
-      { level: 1, content: '问题的表面现象', hasChildren: true },
-      { level: 1, content: '相关影响因素', hasChildren: true }
-    ],
-    originalPrompt: userInput
-  };
-};
+// 导出AI服务
+export { geminiService, GeminiService } from './gemini';
 
-export const expandNodeContent = async (
-  nodeContent: string,
-  nodeLevel: number,
-  parentContext: string,
-  userPrompt: string
-) => {
-  // 使用参数避免未使用警告
-  console.log('Expanding node:', { nodeContent, nodeLevel, parentContext, userPrompt });
+// 导出类型定义
+export type {
+  AIServiceConfig,
+  AIServiceError,
+  AnalysisRequest,
+  LevelGenerationResult,
+  AIAnalysisResult,
+  NodeExpansionRequest,
+  NodeExpansionResult,
+  GeminiRequest,
+  GeminiResponse,
+  GeminiCandidate,
+  GeminiContent,
+  GeminiPart
+} from './types';
 
-  // 模拟节点扩展结果
-  return {
-    children: [
-      { content: `${nodeContent} - 子项1`, level: nodeLevel + 1, hasChildren: true },
-      { content: `${nodeContent} - 子项2`, level: nodeLevel + 1, hasChildren: true }
-    ]
-  };
-};
+// 导出Prompt模板
+export {
+  ANALYZE_AND_GENERATE_LEVELS_PROMPT,
+  EXPAND_NODE_PROMPT,
+  CHATBOT_RESPONSE_TEMPLATE,
+  SYSTEM_PROMPT,
+  ERROR_PROMPTS
+} from './prompts';
 
-export const generateChatBotResponse = (levelCount: number): string => {
-  return `已根据关键词为您准备好${levelCount}个层级的基础构建模型，您可根据需求调整生成的层级。点击箭头以生成下一级内容。`;
-};
-
+// 工具函数
 export const getNodeBackgroundColor = (level: number): string => {
   if (level === 0) return '#161618'; // 原始内容
   return level % 2 === 1 ? '#262627' : '#161618';
 };
 
+// AI服务健康检查
 export const checkAIServiceHealth = async (): Promise<boolean> => {
-  return true;
+  try {
+    // 简单的健康检查：尝试分析一个简单问题
+    const { geminiService } = await import('./gemini');
+    await geminiService.analyzeAndGenerateLevels({ userInput: '测试' });
+    return true;
+  } catch (error) {
+    console.error('AI service health check failed:', error);
+    return false;
+  }
 };
