@@ -214,7 +214,7 @@ export const useCanvasStore = create<CanvasStore>()(
     // AI相关初始状态 - 用户未操作时为空
     levels: [],
     currentLevel: 1,
-    originalPrompt: '测试问题',
+    originalPrompt: '',
     isAIGenerating: false,
 
     snapshots: [],

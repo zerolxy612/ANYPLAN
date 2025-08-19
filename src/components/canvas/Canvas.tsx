@@ -21,6 +21,7 @@ import KeywordNode from './node-types/KeywordNode';
 import OriginalNode from './node-types/OriginalNode';
 import DefaultEdge from './edges/DefaultEdge';
 import LevelBar from './LevelBar';
+import OriginalNodeComponent from './OriginalNode';
 
 // 节点类型映射
 const nodeTypes = {
@@ -55,12 +56,24 @@ function CanvasComponent({ className }: CanvasProps) {
     insertLevel,
     deleteLevel,
     editLevel,
+    originalPrompt,
   } = useCanvasStore();
 
   const {
     fitView,
     addNode,
   } = useCanvasActions();
+
+  // 原始节点操作处理
+  const handleRegenerateOriginal = useCallback(() => {
+    // TODO: 重新生成原始内容和层级框架
+    console.log('重新生成原始内容');
+  }, []);
+
+  const handleGenerateNextLevel = useCallback(() => {
+    // TODO: 生成下一层级内容
+    console.log('生成下一层级内容');
+  }, []);
 
 
 
@@ -287,7 +300,19 @@ function CanvasComponent({ className }: CanvasProps) {
             </div>
           </Panel>
         )}
+
+
       </ReactFlow>
+
+      {/* 原始节点 - 当有层级时显示 */}
+      {levels.length > 0 && originalPrompt && (
+        <OriginalNodeComponent
+          content={originalPrompt}
+          onRegenerate={handleRegenerateOriginal}
+          onGenerateNext={handleGenerateNextLevel}
+          viewport={viewport}
+        />
+      )}
       </div>
 
       <style jsx>{`
