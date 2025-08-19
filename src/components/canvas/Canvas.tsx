@@ -52,7 +52,7 @@ function CanvasComponent({ className }: CanvasProps) {
     addNode,
   } = useCanvasActions();
 
-  console.log('🎨 Canvas component rendered!');
+
 
   // 使用 React Flow 的状态管理，直接使用 store 中的数据
   const [reactFlowNodes, setReactFlowNodes, onNodesChange] = useNodesState(nodes);

@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useCanvasStore } from '@/store/canvas.store';
+
+interface Message {
+  id: string;
+  type: 'user' | 'ai';
+  content: string;
+}
 
 const ChatPanel = () => {
   const [greeting, setGreeting] = useState('');
+  const [inputValue, setInputValue] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  const { analyzeUserInput, isAIGenerating, levels } = useCanvasStore();
 
   // 根据时间动态设置问候语
   useEffect(() => {
@@ -31,14 +42,89 @@ const ChatPanel = () => {
   // 如果greeting为空，设置默认值
   const displayGreeting = greeting || '下午好';
 
+  // 处理用户输入
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isAIGenerating) {
+      return;
+    }
+
+    const userMessage = {
+      id: `user-${Date.now()}`,
+      type: 'user' as const,
+      content: inputValue.trim()
+    };
+
+    setMessages((prev: Message[]) => [...prev, userMessage]);
+    const currentInput = inputValue.trim();
+    setInputValue('');
+
+    try {
+      const aiResponse = await analyzeUserInput(currentInput);
+
+      const aiMessage: Message = {
+        id: `ai-${Date.now()}`,
+        type: 'ai' as const,
+        content: typeof aiResponse === 'string' ? aiResponse : '分析完成，请查看画布上的结果。'
+      };
+
+      setMessages((prev: Message[]) => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error in handleSendMessage:', error);
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        type: 'ai' as const,
+        content: '抱歉，处理您的请求时出现了错误，请重试。'
+      };
+      setMessages((prev: Message[]) => [...prev, errorMessage]);
+    }
+  };
+
+  // 处理键盘事件
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   return (
     <div className="chat-panel">
-      {/* 问候文本 */}
-      <div className="greeting-section">
-        <div className="text-block">
-          <h2 className="greeting-title">{displayGreeting}，</h2>
-          <p className="greeting-subtitle">有什么我可以帮你的吗？</p>
+      {/* 消息历史 */}
+      {messages.length > 0 && (
+        <div className="messages-section">
+          {messages.map((message) => (
+            <div key={message.id} className={`message ${message.type}`}>
+              <div className="message-content">
+                {message.content}
+              </div>
+            </div>
+          ))}
+          {isAIGenerating && (
+            <div className="message ai">
+              <div className="message-content">
+                <div className="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+      )}
+
+      {/* 问候文本或层级信息 */}
+      <div className={`greeting-section ${messages.length > 0 ? 'compact' : ''}`}>
+        {messages.length === 0 ? (
+          <div className="text-block">
+            <h2 className="greeting-title">{displayGreeting}，</h2>
+            <p className="greeting-subtitle">有什么我可以帮你的吗？</p>
+          </div>
+        ) : levels.length > 0 && (
+          <div className="levels-info">
+            <p className="levels-text">已生成 {levels.length} 个层级的探索框架</p>
+          </div>
+        )}
 
         {/* 输入区域 */}
         <div className="input-section">
@@ -47,10 +133,14 @@ const ChatPanel = () => {
               className="chat-input"
               placeholder="请输入您的问题或上传文件"
               rows={3}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isAIGenerating}
             />
             <div className="input-footer">
               <div className="model-info">
-                <span className="model-name">HKGAI V1</span>
+                <span className="model-name">Gemini 2.0</span>
               </div>
               <div className="input-actions">
                 <button className="action-button" title="附件">
@@ -59,8 +149,13 @@ const ChatPanel = () => {
                 <button className="action-button" title="语音">
                   🎤
                 </button>
-                <button className="action-button send-button" title="发送">
-                  ↑
+                <button
+                  className={`action-button send-button ${isAIGenerating ? 'disabled' : ''}`}
+                  title="发送"
+                  onClick={handleSendMessage}
+                  disabled={isAIGenerating || !inputValue.trim()}
+                >
+                  {isAIGenerating ? '⏳' : '↑'}
                 </button>
               </div>
             </div>
@@ -75,15 +170,107 @@ const ChatPanel = () => {
           flex: 1;
           display: flex;
           flex-direction: column;
+          gap: 16px;
+        }
+
+        .messages-section {
+          flex: 1;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          padding: 16px 0;
+        }
+
+        .message {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .message.user {
+          align-items: flex-end;
+        }
+
+        .message.ai {
+          align-items: flex-start;
+        }
+
+        .message-content {
+          max-width: 80%;
+          padding: 12px 16px;
+          border-radius: 16px;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        .message.user .message-content {
+          background-color: #65f0a3;
+          color: #000000;
+        }
+
+        .message.ai .message-content {
+          background-color: #2a2830;
+          color: #ffffff;
+        }
+
+        .typing-indicator {
+          display: flex;
+          gap: 4px;
+          align-items: center;
+        }
+
+        .typing-indicator span {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background-color: #65f0a3;
+          animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-indicator span:nth-child(1) {
+          animation-delay: -0.32s;
+        }
+
+        .typing-indicator span:nth-child(2) {
+          animation-delay: -0.16s;
+        }
+
+        @keyframes typing {
+          0%, 80%, 100% {
+            opacity: 0.3;
+            transform: scale(0.8);
+          }
+          40% {
+            opacity: 1;
+            transform: scale(1);
+          }
         }
 
         .greeting-section {
-          flex: 1;
           display: flex;
           flex-direction: column;
           justify-content: center;
           align-items: center;
           gap: 32px;
+        }
+
+        .greeting-section.compact {
+          gap: 16px;
+          justify-content: flex-end;
+        }
+
+        .greeting-section:not(.compact) {
+          flex: 1;
+        }
+
+        .levels-info {
+          text-align: center;
+        }
+
+        .levels-text {
+          color: #65f0a3;
+          font-size: 14px;
+          margin: 0;
         }
 
         .text-block {
@@ -190,8 +377,14 @@ const ChatPanel = () => {
           font-weight: bold;
         }
 
-        .send-button:hover {
+        .send-button:hover:not(.disabled) {
           background-color: #52d18a;
+        }
+
+        .send-button.disabled {
+          background-color: #404040;
+          color: #6b7280;
+          cursor: not-allowed;
         }
 
         @media (max-width: 768px) {
