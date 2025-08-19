@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { AILevel } from '@/types/canvas';
 
 interface LevelBarProps {
@@ -12,6 +12,7 @@ interface LevelBarProps {
   onEditLevel?: (level: number, newDescription: string) => void;
   onThemeToggle?: () => void;
   className?: string;
+  viewport?: { x: number; y: number; zoom: number };
 }
 
 const LevelBar: React.FC<LevelBarProps> = ({
@@ -22,11 +23,12 @@ const LevelBar: React.FC<LevelBarProps> = ({
   onDeleteLevel,
   onEditLevel,
   onThemeToggle,
-  className
+  className,
+  viewport
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [viewportStartLevel, setViewportStartLevel] = useState(1); // 当前视口显示的起始层级
+  const maxVisibleLevels = 3; // 最多同时显示3个层级
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -36,29 +38,41 @@ const LevelBar: React.FC<LevelBarProps> = ({
   const [editingLevel, setEditingLevel] = useState<number | null>(null);
   const [editingText, setEditingText] = useState('');
 
-  // 检查滚动状态
-  const checkScrollState = () => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-      setCanScrollLeft(scrollLeft > 0);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
-    }
-  };
+  // 计算当前可见的层级
+  const visibleLevels = levels.slice(
+    viewportStartLevel - 1,
+    viewportStartLevel - 1 + maxVisibleLevels
+  );
 
-  // 滚动函数
+  // 计算是否可以左右滚动
+  const canScrollLeft = viewportStartLevel > 1;
+  const canScrollRight = viewportStartLevel + maxVisibleLevels - 1 < levels.length;
+
+  // 左滚动
   const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
-      setTimeout(checkScrollState, 300);
+    if (canScrollLeft) {
+      setViewportStartLevel(Math.max(1, viewportStartLevel - 1));
     }
   };
 
+  // 右滚动
   const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
-      setTimeout(checkScrollState, 300);
+    if (canScrollRight) {
+      setViewportStartLevel(Math.min(levels.length - maxVisibleLevels + 1, viewportStartLevel + 1));
     }
   };
+
+  // 当前层级改变时，确保在视口中可见
+  useEffect(() => {
+    if (currentLevel) {
+      // 如果当前层级不在可见范围内，调整视口
+      if (currentLevel < viewportStartLevel) {
+        setViewportStartLevel(currentLevel);
+      } else if (currentLevel >= viewportStartLevel + maxVisibleLevels) {
+        setViewportStartLevel(Math.max(1, currentLevel - maxVisibleLevels + 1));
+      }
+    }
+  }, [currentLevel, viewportStartLevel, maxVisibleLevels]);
 
   // 右键菜单处理
   const handleContextMenu = (e: React.MouseEvent, level: number) => {
@@ -108,13 +122,7 @@ const LevelBar: React.FC<LevelBarProps> = ({
     }
   }, [contextMenu]);
 
-  // 初始化滚动状态检查
-  React.useEffect(() => {
-    checkScrollState();
-    const handleResize = () => checkScrollState();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [levels]);
+
   // 如果没有层级数据，显示默认状态
   if (levels.length === 0) {
     return (
@@ -143,9 +151,10 @@ const LevelBar: React.FC<LevelBarProps> = ({
       borderBottom: '1px solid #404040',
       display: 'flex',
       alignItems: 'center',
-      padding: '0 20px'
+      padding: '0 20px',
+      gap: '8px'
     }}>
-      <div style={{ color: '#a1a1aa', fontSize: '14px', marginRight: '20px' }}>
+      <div style={{ color: '#a1a1aa', fontSize: '14px' }}>
         主题 | 排版
       </div>
 
@@ -156,7 +165,7 @@ const LevelBar: React.FC<LevelBarProps> = ({
           style={{
             width: '32px',
             height: '32px',
-            borderRadius: '50%',
+            borderRadius: '6px',
             backgroundColor: '#404040',
             border: '1px solid #606060',
             color: '#ffffff',
@@ -164,8 +173,8 @@ const LevelBar: React.FC<LevelBarProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginRight: '8px',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.2s ease',
+            fontSize: '16px'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#65f0a3';
@@ -180,32 +189,20 @@ const LevelBar: React.FC<LevelBarProps> = ({
         </button>
       )}
 
-      {/* 滚动容器 */}
-      <div
-        ref={scrollContainerRef}
-        onScroll={checkScrollState}
-        style={{
-          flex: 1,
-          display: 'flex',
-          gap: '8px',
-          alignItems: 'center',
-          overflowX: 'auto',
-          scrollbarWidth: 'none', // Firefox
-          msOverflowStyle: 'none', // IE/Edge
-          paddingLeft: '8px',
-          paddingRight: '8px',
-          // 隐藏webkit滚动条
-          WebkitScrollbar: 'none'
-        } as React.CSSProperties}
-      >
-        {levels.map((level, index) => (
-          <React.Fragment key={level.level}>
-            {/* 层级按钮 */}
-            <button
-              onClick={() => onLevelClick?.(level.label)}
-              onContextMenu={(e) => handleContextMenu(e, level.level)}
-              onDoubleClick={() => handleDoubleClick(level)}
-              style={{
+      {/* 可见层级容器 */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        flex: 1
+      }}>
+        {visibleLevels.map((level) => (
+          <button
+            key={level.level}
+            onClick={() => onLevelClick?.(level.label)}
+            onContextMenu={(e) => handleContextMenu(e, level.level)}
+            onDoubleClick={() => handleDoubleClick(level)}
+            style={{
               padding: '0',
               backgroundColor: level.level === currentLevel ? '#65f0a3' : '#18161a',
               border: level.level === currentLevel ? 'none' : '1px solid #404040',
@@ -216,7 +213,10 @@ const LevelBar: React.FC<LevelBarProps> = ({
               transition: 'all 0.2s ease',
               display: 'flex',
               alignItems: 'center',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              height: '40px',
+              minWidth: '200px',
+              maxWidth: '300px'
             }}
             onMouseEnter={(e) => {
               if (level.level !== currentLevel) {
@@ -248,7 +248,9 @@ const LevelBar: React.FC<LevelBarProps> = ({
               color: level.level === currentLevel ? '#000000' : '#a1a1aa',
               display: 'flex',
               alignItems: 'center',
-              gap: '4px'
+              gap: '4px',
+              flex: 1,
+              overflow: 'hidden'
             }}>
               {editingLevel === level.level ? (
                 <input
@@ -271,58 +273,63 @@ const LevelBar: React.FC<LevelBarProps> = ({
                     color: 'inherit',
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
-                    width: '100px',
-                    minWidth: '60px'
+                    width: '100%'
                   }}
                 />
               ) : (
-                level.description
+                <span style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {level.description}
+                </span>
               )}
               {level.nodeCount > 0 && (
                 <span style={{
                   fontSize: '12px',
-                  opacity: 0.7
+                  opacity: 0.7,
+                  flexShrink: 0
                 }}>
                   ({level.nodeCount})
                 </span>
               )}
             </div>
-            </button>
-
-            {/* 添加层级按钮 - 在每个层级后面，但不在最后一个层级后面 */}
-            {index < levels.length - 1 && levels.length < 6 && (
-              <button
-                onClick={() => onAddLevel?.(level.level)}
-                style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  backgroundColor: '#404040',
-                  border: '1px solid #606060',
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#65f0a3';
-                  e.currentTarget.style.color = '#000000';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#404040';
-                  e.currentTarget.style.color = '#ffffff';
-                }}
-                title={`在L${level.level}后添加新层级`}
-              >
-                +
-              </button>
-            )}
-          </React.Fragment>
+          </button>
         ))}
+
+        {/* 添加层级按钮 - 在最后一个可见层级后面 */}
+        {levels.length < 6 && (
+          <button
+            onClick={() => onAddLevel?.(visibleLevels[visibleLevels.length - 1]?.level || 0)}
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '6px',
+              backgroundColor: '#404040',
+              border: '1px solid #606060',
+              color: '#ffffff',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#65f0a3';
+              e.currentTarget.style.color = '#000000';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#404040';
+              e.currentTarget.style.color = '#ffffff';
+            }}
+            title="添加新层级"
+          >
+            +
+          </button>
+        )}
       </div>
 
       {/* 右滚动按钮 */}
@@ -332,7 +339,7 @@ const LevelBar: React.FC<LevelBarProps> = ({
           style={{
             width: '32px',
             height: '32px',
-            borderRadius: '50%',
+            borderRadius: '6px',
             backgroundColor: '#404040',
             border: '1px solid #606060',
             color: '#ffffff',
@@ -340,8 +347,8 @@ const LevelBar: React.FC<LevelBarProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginLeft: '8px',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.2s ease',
+            fontSize: '16px'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#65f0a3';

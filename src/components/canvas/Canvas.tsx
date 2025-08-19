@@ -153,6 +153,7 @@ function CanvasComponent({ className }: CanvasProps) {
         <LevelBar
           levels={levels}
           currentLevel={currentLevel}
+          viewport={viewport}
           onLevelClick={(levelId) => {
             const level = parseInt(levelId.replace('L', ''));
             setCurrentLevel(level);
