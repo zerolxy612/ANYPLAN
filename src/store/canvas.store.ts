@@ -91,7 +91,7 @@ const defaultLoadingState: LoadingState = {
 };
 
 export const useCanvasStore = create<CanvasStore>()(
-  immer((set, get) => ({
+  immer((set) => ({
     // 初始状态
     nodes: [],
     edges: [],
@@ -218,22 +218,24 @@ export const useCanvasStore = create<CanvasStore>()(
       set((state) => {
         state.loading.isSaving = true;
       });
-      
+
       try {
-        const snapshot: Snapshot = {
-          id: `snapshot-${Date.now()}`,
-          name,
-          description,
-          nodes: [...state.nodes],
-          edges: [...state.edges],
-          viewport: { ...state.viewport },
-          selectedPath: state.selectedPath ? { ...state.selectedPath } : undefined,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        
-        state.snapshots.push(snapshot);
-        state.currentSnapshotId = snapshot.id;
+        set((state) => {
+          const snapshot: Snapshot = {
+            id: `snapshot-${Date.now()}`,
+            name,
+            description,
+            nodes: [...state.nodes],
+            edges: [...state.edges],
+            viewport: { ...state.viewport },
+            selectedPath: state.selectedPath ? { ...state.selectedPath } : undefined,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+
+          state.snapshots.push(snapshot);
+          state.currentSnapshotId = snapshot.id;
+        });
         
       } catch (error) {
         set((state) => {

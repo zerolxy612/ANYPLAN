@@ -96,7 +96,7 @@ export interface AppStats {
 export interface ImportExportFormat {
   format: 'json' | 'markdown' | 'pdf' | 'image';
   version: string;
-  options?: Record<string, any>;
+  options?: Record<string, unknown>;
 }
 
 // 错误报告
@@ -111,7 +111,7 @@ export interface ErrorReport {
     action?: string;
   };
   stackTrace: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // 性能指标
@@ -137,6 +137,6 @@ export type AppEvent =
 // 事件监听器
 export interface EventListener {
   event: AppEvent;
-  handler: (data?: any) => void;
+  handler: (data?: unknown) => void;
   once?: boolean;
 }

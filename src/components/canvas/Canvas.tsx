@@ -19,7 +19,6 @@ import { useCanvasStore } from '@/store/canvas.store';
 import { useCanvasActions } from './hooks/useCanvasActions';
 import KeywordNode from './node-types/KeywordNode';
 import DefaultEdge from './edges/DefaultEdge';
-import { CANVAS_CONFIG } from '@/lib/canvas/constants';
 
 // 节点类型映射
 const nodeTypes = {
@@ -40,9 +39,6 @@ function CanvasComponent({ className }: CanvasProps) {
   const {
     nodes,
     edges,
-    viewport,
-    setNodes,
-    setEdges,
     setViewport,
     config,
     loading,
@@ -53,7 +49,6 @@ function CanvasComponent({ className }: CanvasProps) {
     autoLayout,
     fitView,
     addNode,
-    pasteNode,
   } = useCanvasActions();
 
   // 使用 React Flow 的状态管理
@@ -86,7 +81,7 @@ function CanvasComponent({ className }: CanvasProps) {
 
   // 视口变化处理
   const onViewportChange = useCallback(
-    (newViewport: typeof viewport) => {
+    (newViewport: { x: number; y: number; zoom: number }) => {
       setViewport(newViewport);
     },
     [setViewport]

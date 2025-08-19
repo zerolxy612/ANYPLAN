@@ -52,7 +52,7 @@ const DefaultEdge = memo(({
           }}
           className="react-flow__edge-text"
         >
-          {data.label}
+          {String(data.label)}
         </text>
       )}
     </>

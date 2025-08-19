@@ -1,7 +1,7 @@
 import { Node as ReactFlowNode, Edge as ReactFlowEdge } from '@xyflow/react';
 
 // 基础节点数据接口
-export interface BaseNodeData {
+export interface BaseNodeData extends Record<string, unknown> {
   id: string;
   content: string;
   level: number;

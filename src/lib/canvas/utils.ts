@@ -166,23 +166,38 @@ export function fitView(
 }
 
 // 验证节点数据
-export function validateNodeData(data: any): boolean {
+export function validateNodeData(data: unknown): boolean {
+  if (!data || typeof data !== 'object' || data === null) {
+    return false;
+  }
+
+  const obj = data as Record<string, unknown>;
   return (
-    data &&
-    typeof data.id === 'string' &&
-    typeof data.content === 'string' &&
-    typeof data.level === 'number' &&
-    typeof data.type === 'string'
+    'id' in obj &&
+    'content' in obj &&
+    'level' in obj &&
+    'type' in obj &&
+    typeof obj.id === 'string' &&
+    typeof obj.content === 'string' &&
+    typeof obj.level === 'number' &&
+    typeof obj.type === 'string'
   );
 }
 
 // 验证边数据
-export function validateEdgeData(edge: any): boolean {
+export function validateEdgeData(edge: unknown): boolean {
+  if (!edge || typeof edge !== 'object' || edge === null) {
+    return false;
+  }
+
+  const obj = edge as Record<string, unknown>;
   return (
-    edge &&
-    typeof edge.id === 'string' &&
-    typeof edge.source === 'string' &&
-    typeof edge.target === 'string'
+    'id' in obj &&
+    'source' in obj &&
+    'target' in obj &&
+    typeof obj.id === 'string' &&
+    typeof obj.source === 'string' &&
+    typeof obj.target === 'string'
   );
 }
 
@@ -214,7 +229,7 @@ export function deepClone<T>(obj: T): T {
 }
 
 // 防抖函数
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -227,7 +242,7 @@ export function debounce<T extends (...args: any[]) => any>(
 }
 
 // 节流函数
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {

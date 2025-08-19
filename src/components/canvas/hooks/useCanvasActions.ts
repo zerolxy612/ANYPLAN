@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useCanvasStore } from '@/store/canvas.store';
 import { autoLayout, levelLayout, treeLayout } from '../layout/autoLayout';
-import { createKeywordNode, createEdge, fitView } from '@/lib/canvas/utils';
+import { createKeywordNode, createEdge } from '@/lib/canvas/utils';
 import { CanvasNode, NodeContext } from '@/types/canvas';
 
 export function useCanvasActions() {
