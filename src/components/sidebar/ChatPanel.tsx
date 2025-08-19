@@ -2,10 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 
-type ChatMode = 'inquiry' | 'writing';
-
 const ChatPanel = () => {
-  const [mode, setMode] = useState<ChatMode>('inquiry');
   const [greeting, setGreeting] = useState('');
 
   // 根据时间动态设置问候语
@@ -35,58 +32,36 @@ const ChatPanel = () => {
   const displayGreeting = greeting || '下午好';
 
   return (
-    <div className="chat-panel-wrapper">
-      {/* 模式切换按钮 */}
-      <div className="mode-toggle">
-        <div className="mode-buttons">
-          <button
-            className={`mode-button ${mode === 'inquiry' ? 'active' : ''}`}
-            onClick={() => setMode('inquiry')}
-          >
-            <span className="mode-icon">🔍</span>
-            询问模式
-          </button>
-          <button
-            className={`mode-button ${mode === 'writing' ? 'active' : ''}`}
-            onClick={() => setMode('writing')}
-          >
-            <span className="mode-icon">✍️</span>
-            写作模式
-          </button>
+    <div className="chat-panel">
+      {/* 问候文本 */}
+      <div className="greeting-section">
+        <div className="text-block">
+          <h2 className="greeting-title">{displayGreeting}，</h2>
+          <p className="greeting-subtitle">有什么我可以帮你的吗？</p>
         </div>
-      </div>
 
-      <div className="chat-panel">
-        {/* 问候文本 */}
-        <div className="greeting-section">
-          <div className="text-block">
-            <h2 className="greeting-title">{displayGreeting}，</h2>
-            <p className="greeting-subtitle">有什么我可以帮你的吗？</p>
-          </div>
-
-          {/* 输入区域 */}
-          <div className="input-section">
-            <div className="input-container">
-              <textarea
-                className="chat-input"
-                placeholder="请输入您的问题或上传文件"
-                rows={3}
-              />
-              <div className="input-footer">
-                <div className="model-info">
-                  <span className="model-name">HKGAI V1</span>
-                </div>
-                <div className="input-actions">
-                  <button className="action-button" title="附件">
-                    📎
-                  </button>
-                  <button className="action-button" title="语音">
-                    🎤
-                  </button>
-                  <button className="action-button send-button" title="发送">
-                    ↑
-                  </button>
-                </div>
+        {/* 输入区域 */}
+        <div className="input-section">
+          <div className="input-container">
+            <textarea
+              className="chat-input"
+              placeholder="请输入您的问题或上传文件"
+              rows={3}
+            />
+            <div className="input-footer">
+              <div className="model-info">
+                <span className="model-name">HKGAI V1</span>
+              </div>
+              <div className="input-actions">
+                <button className="action-button" title="附件">
+                  📎
+                </button>
+                <button className="action-button" title="语音">
+                  🎤
+                </button>
+                <button className="action-button send-button" title="发送">
+                  ↑
+                </button>
               </div>
             </div>
           </div>
@@ -94,53 +69,8 @@ const ChatPanel = () => {
       </div>
 
       <style jsx>{`
-        .chat-panel-wrapper {
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .mode-toggle {
-          padding: 20px 20px 0 20px;
-        }
-
-        .mode-buttons {
-          display: flex;
-          gap: 8px;
-        }
-
-        .mode-button {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 8px 16px;
-          border: none;
-          border-radius: 20px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          color: #ffffff;
-        }
-
-        .mode-button:not(.active) {
-          background-color: #18161a;
-        }
-
-        .mode-button.active {
-          background-color: #65f0a3;
-          color: #000000;
-        }
-
-        .mode-button:hover:not(.active) {
-          background-color: #2a2830;
-        }
-
-        .mode-icon {
-          font-size: 16px;
-        }
-
         .chat-panel {
+          height: 100%;
           padding: 20px;
           flex: 1;
           display: flex;
@@ -265,10 +195,6 @@ const ChatPanel = () => {
         }
 
         @media (max-width: 768px) {
-          .mode-toggle {
-            padding: 16px 16px 0 16px;
-          }
-
           .chat-panel {
             padding: 16px;
             gap: 20px;
@@ -280,11 +206,6 @@ const ChatPanel = () => {
 
           .greeting-subtitle {
             font-size: 16px;
-          }
-
-          .mode-button {
-            padding: 6px 12px;
-            font-size: 13px;
           }
         }
       `}</style>

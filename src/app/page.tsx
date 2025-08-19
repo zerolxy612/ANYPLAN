@@ -5,6 +5,8 @@ import Canvas from '@/components/canvas/Canvas';
 import ChatPanel from '@/components/sidebar/ChatPanel';
 
 export default function Home() {
+  const [mode, setMode] = React.useState<'inquiry' | 'writing'>('inquiry');
+
   return (
     <div className="canvas-page">
       <div className="canvas-layout">
@@ -15,6 +17,26 @@ export default function Home() {
 
         {/* 右侧侧边栏 */}
         <div className="sidebar">
+          {/* 模式切换按钮 */}
+          <div className="mode-toggle">
+            <div className="mode-buttons">
+              <button
+                className={`mode-button ${mode === 'inquiry' ? 'active' : ''}`}
+                onClick={() => setMode('inquiry')}
+              >
+                <span className="mode-icon">🔍</span>
+                询问模式
+              </button>
+              <button
+                className={`mode-button ${mode === 'writing' ? 'active' : ''}`}
+                onClick={() => setMode('writing')}
+              >
+                <span className="mode-icon">✍️</span>
+                写作模式
+              </button>
+            </div>
+          </div>
+
           <ChatPanel />
         </div>
       </div>
@@ -45,6 +67,47 @@ export default function Home() {
           border-left: 1px solid #404040;
           display: flex;
           flex-direction: column;
+        }
+
+        .mode-toggle {
+          padding: 20px;
+          background-color: #161618;
+        }
+
+        .mode-buttons {
+          display: flex;
+          gap: 8px;
+        }
+
+        .mode-button {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 16px;
+          border: none;
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          color: #ffffff;
+        }
+
+        .mode-button:not(.active) {
+          background-color: #18161a;
+        }
+
+        .mode-button.active {
+          background-color: #65f0a3;
+          color: #000000;
+        }
+
+        .mode-button:hover:not(.active) {
+          background-color: #2a2830;
+        }
+
+        .mode-icon {
+          font-size: 16px;
         }
 
 
