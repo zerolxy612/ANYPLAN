@@ -206,10 +206,14 @@ export const useCanvasStore = create<CanvasStore>()(
     viewport: defaultViewport,
     selectedPath: null,
 
-    // AI相关初始状态
-    levels: [],
+    // AI相关初始状态 - 临时测试数据
+    levels: [
+      { level: 1, label: 'L1', description: '行为表现', nodeCount: 4, isActive: true },
+      { level: 2, label: 'L2', description: '影响因素', nodeCount: 3, isActive: false },
+      { level: 3, label: 'L3', description: '根本原因', nodeCount: 2, isActive: false }
+    ],
     currentLevel: 1,
-    originalPrompt: '',
+    originalPrompt: '测试问题',
     isAIGenerating: false,
 
     snapshots: [],
