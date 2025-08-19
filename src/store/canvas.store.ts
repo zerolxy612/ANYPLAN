@@ -302,16 +302,38 @@ export const useCanvasStore = create<CanvasStore>()(
           state.currentLevel = 1;
         });
 
-        // 生成初始节点
+        // 生成原始节点和初始节点
         set((state) => {
-          state.nodes = analysisResult.initialNodes.map((nodeData: {
+          // 清空现有节点
+          state.nodes = [];
+          state.edges = [];
+
+          // 创建原始节点（最左侧）
+          const originalNode = {
+            id: `original-${Date.now()}`,
+            type: 'original' as const,
+            position: { x: 50, y: 100 },
+            data: {
+              id: `original-${Date.now()}`,
+              content: userInput,
+              level: 0,
+              type: 'original' as const,
+              originalPrompt: userInput,
+              isRoot: true as const,
+              isGenerating: false,
+              isSelected: false,
+            },
+          };
+
+          // 创建初始关键词节点
+          const keywordNodes = analysisResult.initialNodes.map((nodeData: {
             content: string;
             level: number;
             hasChildren: boolean;
           }, index: number) => ({
             id: `node-${Date.now()}-${index}`,
             type: 'keyword' as const,
-            position: { x: index * 250, y: 100 },
+            position: { x: 450 + index * 250, y: 100 }, // 从原始节点右侧开始
             data: {
               id: `node-${Date.now()}-${index}`,
               content: nodeData.content,
@@ -326,6 +348,19 @@ export const useCanvasStore = create<CanvasStore>()(
               backgroundColor: getNodeBackgroundColor(nodeData.level),
             }
           }));
+
+          // 添加所有节点
+          state.nodes = [originalNode, ...keywordNodes];
+
+          // 创建从原始节点到第一个关键词节点的连接
+          if (keywordNodes.length > 0) {
+            state.edges = [{
+              id: `edge-original-${keywordNodes[0].id}`,
+              source: originalNode.id,
+              target: keywordNodes[0].id,
+              type: 'default',
+            }];
+          }
         });
 
         return generateChatBotResponse(analysisResult.levelCount);
@@ -486,15 +521,38 @@ export const useCanvasStore = create<CanvasStore>()(
       state.nodes = [];
       state.edges = [];
 
-      // 生成初始节点
-      state.nodes = analysisResult.initialNodes.map((nodeData: {
+      // 创建原始节点（如果有原始提示）
+      const originalPrompt = state.originalPrompt;
+      const nodes: CanvasNode[] = [];
+
+      if (originalPrompt) {
+        const originalNode = {
+          id: `original-${Date.now()}`,
+          type: 'original' as const,
+          position: { x: 50, y: 100 },
+          data: {
+            id: `original-${Date.now()}`,
+            content: originalPrompt,
+            level: 0,
+            type: 'original' as const,
+            originalPrompt: originalPrompt,
+            isRoot: true as const,
+            isGenerating: false,
+            isSelected: false,
+          },
+        };
+        nodes.push(originalNode);
+      }
+
+      // 生成初始关键词节点
+      const keywordNodes = analysisResult.initialNodes.map((nodeData: {
         content: string;
         level: number;
         hasChildren: boolean;
       }, index: number) => ({
         id: `node-${Date.now()}-${index}`,
         type: 'keyword' as const,
-        position: { x: index * 250, y: 100 },
+        position: { x: (originalPrompt ? 450 : 50) + index * 250, y: 100 },
         data: {
           id: `node-${Date.now()}-${index}`,
           content: nodeData.content,
@@ -509,6 +567,19 @@ export const useCanvasStore = create<CanvasStore>()(
           backgroundColor: getNodeBackgroundColor(nodeData.level),
         }
       }));
+
+      nodes.push(...keywordNodes);
+      state.nodes = nodes;
+
+      // 创建从原始节点到第一个关键词节点的连接
+      if (originalPrompt && keywordNodes.length > 0) {
+        state.edges = [{
+          id: `edge-original-${keywordNodes[0].id}`,
+          source: nodes[0].id, // 原始节点
+          target: keywordNodes[0].id,
+          type: 'default',
+        }];
+      }
     }),
 
     // AI 生成相关 (占位符实现)

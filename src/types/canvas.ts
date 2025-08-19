@@ -25,6 +25,13 @@ export interface LevelIndicatorData extends BaseNodeData {
   nodeCount: number;
 }
 
+// 原始节点数据
+export interface OriginalNodeData extends BaseNodeData {
+  type: 'original';
+  originalPrompt: string;
+  isRoot: true;
+}
+
 // 输出节点数据
 export interface OutputNodeData extends BaseNodeData {
   type: 'output';
@@ -33,7 +40,7 @@ export interface OutputNodeData extends BaseNodeData {
 }
 
 // 联合节点数据类型
-export type NodeData = KeywordNodeData | LevelIndicatorData | OutputNodeData;
+export type NodeData = KeywordNodeData | LevelIndicatorData | OriginalNodeData | OutputNodeData;
 
 // 扩展的节点类型
 export interface CanvasNode extends ReactFlowNode {

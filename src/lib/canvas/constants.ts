@@ -1,6 +1,7 @@
 // 节点类型常量
 export const NODE_TYPES = {
   KEYWORD: 'keyword',
+  ORIGINAL: 'original',
   LEVEL: 'level',
   OUTPUT: 'output',
 } as const;
@@ -16,6 +17,10 @@ export const NODE_DIMENSIONS = {
   KEYWORD: {
     width: 200,
     height: 80,
+  },
+  ORIGINAL: {
+    width: 320,
+    height: 120,
   },
   LEVEL: {
     width: 150,

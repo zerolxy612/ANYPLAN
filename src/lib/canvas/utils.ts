@@ -11,6 +11,8 @@ export function getNodeDimensions(nodeType: string) {
   switch (nodeType) {
     case 'keyword':
       return NODE_DIMENSIONS.KEYWORD;
+    case 'original':
+      return NODE_DIMENSIONS.ORIGINAL;
     case 'level':
       return NODE_DIMENSIONS.LEVEL;
     case 'output':
@@ -65,6 +67,29 @@ export function createKeywordNode(
       parentId,
       canExpand: true,
       hasChildren: false,
+    },
+  };
+}
+
+// 创建原始节点
+export function createOriginalNode(
+  content: string,
+  originalPrompt: string,
+  position: NodePosition
+): CanvasNode {
+  return {
+    id: generateId('original'),
+    type: 'original',
+    position,
+    data: {
+      id: generateId('original'),
+      type: 'original',
+      content,
+      level: 0, // 原始节点为0级
+      originalPrompt,
+      isRoot: true,
+      isGenerating: false,
+      isSelected: false,
     },
   };
 }

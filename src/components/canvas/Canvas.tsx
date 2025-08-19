@@ -18,12 +18,14 @@ import '@xyflow/react/dist/style.css';
 import { useCanvasStore } from '@/store/canvas.store';
 import { useCanvasActions } from './hooks/useCanvasActions';
 import KeywordNode from './node-types/KeywordNode';
+import OriginalNode from './node-types/OriginalNode';
 import DefaultEdge from './edges/DefaultEdge';
 import LevelBar from './LevelBar';
 
 // 节点类型映射
 const nodeTypes = {
   keyword: KeywordNode,
+  original: OriginalNode,
 };
 
 // 边类型映射
@@ -42,6 +44,7 @@ function CanvasComponent({ className }: CanvasProps) {
   const {
     nodes,
     edges,
+    viewport,
     setViewport,
     config,
     loading,
@@ -213,6 +216,32 @@ function CanvasComponent({ className }: CanvasProps) {
         fitView
         attributionPosition="bottom-left"
       >
+        {/* 层级背景区域 - 使用SVG实现更好的性能 */}
+        <svg
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+            zIndex: -1,
+          }}
+        >
+          {levels.map((level, index) => (
+            <rect
+              key={level.level}
+              x={400 + (level.level - 1) * 300}
+              y={0}
+              width={300}
+              height="100%"
+              fill={index % 2 === 0 ? '#1a1a1c' : '#161618'}
+              stroke="#2a2a2a"
+              strokeWidth="1"
+            />
+          ))}
+        </svg>
+
         {/* 背景 */}
         <Background
           color="#404040"
@@ -331,6 +360,21 @@ function CanvasComponent({ className }: CanvasProps) {
           flex: 1;
           width: 100%;
           height: 100%;
+        }
+
+        .level-background-container {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+        }
+
+        .level-background {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          pointer-events: none;
+          z-index: -1;
         }
       `}</style>
     </div>
