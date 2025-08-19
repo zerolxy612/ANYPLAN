@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Canvas from '@/components/canvas/Canvas';
+import ChatPanel from '@/components/sidebar/ChatPanel';
 
 export default function Home() {
   return (
@@ -14,10 +15,7 @@ export default function Home() {
 
         {/* 右侧侧边栏 */}
         <div className="sidebar">
-          <div className="sidebar-content">
-            <h3>AI 助手</h3>
-            <p>画布功能正在开发中...</p>
-          </div>
+          <ChatPanel />
         </div>
       </div>
 
@@ -37,35 +35,19 @@ export default function Home() {
         .canvas-area {
           flex: 1;
           height: 100%;
-          background: #f8fafc;
+          background: #161618;
         }
 
         .sidebar {
-          width: 320px;
+          width: 33.333%;
           height: 100%;
-          background: white;
-          border-left: 1px solid #e2e8f0;
+          background: #2a292c;
+          border-left: 1px solid #404040;
           display: flex;
           flex-direction: column;
         }
 
-        .sidebar-content {
-          padding: 20px;
-          flex: 1;
-        }
 
-        .sidebar h3 {
-          margin: 0 0 16px 0;
-          color: #374151;
-          font-size: 18px;
-          font-weight: 600;
-        }
-
-        .sidebar p {
-          margin: 0;
-          color: #6b7280;
-          font-size: 14px;
-        }
       `}</style>
     </div>
   );

@@ -5,7 +5,6 @@ import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
   addEdge,
@@ -61,29 +60,7 @@ function CanvasComponent({ className }: CanvasProps) {
   const [reactFlowNodes, setReactFlowNodes, onNodesChange] = useNodesState(nodes);
   const [reactFlowEdges, setReactFlowEdges, onEdgesChange] = useEdgesState(edges);
 
-  // 初始化示例数据
-  React.useEffect(() => {
-    if (nodes.length === 0) {
-      // 创建示例节点
-      const initialNodes = [
-        {
-          id: 'root-1',
-          type: 'keyword',
-          position: { x: 250, y: 50 },
-          data: {
-            id: 'root-1',
-            type: 'keyword' as const,
-            content: '我总是拖延，明知道事情很重要但就是不想开始做',
-            level: 1,
-            canExpand: true,
-            hasChildren: false,
-          },
-        },
-      ];
-
-      setNodes(initialNodes);
-    }
-  }, [nodes.length, setNodes]);
+  // 不再自动创建初始节点，保持画布为空
 
   // 同步状态
   React.useEffect(() => {
@@ -194,27 +171,17 @@ function CanvasComponent({ className }: CanvasProps) {
         attributionPosition="bottom-left"
       >
         {/* 背景 */}
-        <Background 
-          color="#e2e8f0" 
-          gap={20} 
+        <Background
+          color="#404040"
+          gap={20}
           size={1}
-          variant="dots"
         />
-        
+
         {/* 控制面板 */}
-        <Controls 
+        <Controls
           showZoom={true}
           showFitView={true}
           showInteractive={true}
-        />
-        
-        {/* 小地图 */}
-        <MiniMap 
-          nodeColor="#3b82f6"
-          nodeStrokeWidth={3}
-          zoomable
-          pannable
-          position="bottom-right"
         />
         
         {/* 工具栏 */}
