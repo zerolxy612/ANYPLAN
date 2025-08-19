@@ -150,6 +150,8 @@ interface CanvasStore {
   setCurrentLevel: (level: number) => void;
   updateLevelNodeCount: (level: number, count: number) => void;
   insertLevel: (afterLevel: number) => Promise<void>;
+  deleteLevel: (level: number) => void;
+  editLevel: (level: number, newDescription: string) => void;
 
   // AI 生成相关
   generateChildren: (nodeId: string, context: NodeContext) => Promise<void>;
@@ -423,6 +425,61 @@ export const useCanvasStore = create<CanvasStore>()(
         });
       }
     },
+
+    // 删除层级
+    deleteLevel: (levelToDelete: number) => set((state) => {
+      console.log('🗑️ Deleting level:', levelToDelete);
+
+      // 不能删除最后一个层级
+      if (state.levels.length <= 1) {
+        console.warn('Cannot delete the last level');
+        return;
+      }
+
+      // 删除指定层级
+      state.levels = state.levels.filter(level => level.level !== levelToDelete);
+
+      // 重新编号所有大于被删除层级的层级
+      state.levels = state.levels.map(level => ({
+        ...level,
+        level: level.level > levelToDelete ? level.level - 1 : level.level,
+        label: level.level > levelToDelete ? `L${level.level - 1}` : level.label
+      }));
+
+      // 删除该层级的所有节点
+      state.nodes = state.nodes.filter(node => node.data.level !== levelToDelete);
+
+      // 更新所有大于被删除层级的节点的层级编号
+      state.nodes = state.nodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+          level: node.data.level > levelToDelete ? node.data.level - 1 : node.data.level
+        }
+      }));
+
+      // 调整当前层级
+      if (state.currentLevel === levelToDelete) {
+        // 如果删除的是当前层级，切换到第一个层级
+        state.currentLevel = 1;
+      } else if (state.currentLevel > levelToDelete) {
+        // 如果当前层级在被删除层级之后，编号减1
+        state.currentLevel = state.currentLevel - 1;
+      }
+
+      console.log('✅ Level deleted successfully');
+    }),
+
+    // 编辑层级描述
+    editLevel: (level: number, newDescription: string) => set((state) => {
+      console.log('✏️ Editing level:', level, 'to:', newDescription);
+
+      const levelIndex = state.levels.findIndex(l => l.level === level);
+      if (levelIndex !== -1) {
+        state.levels[levelIndex].description = newDescription;
+        console.log('✅ Level description updated successfully');
+      }
+    }),
 
     generateInitialNodes: (analysisResult) => set((state) => {
       // 清空现有节点

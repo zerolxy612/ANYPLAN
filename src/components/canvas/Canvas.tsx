@@ -50,6 +50,8 @@ function CanvasComponent({ className }: CanvasProps) {
     currentLevel,
     setCurrentLevel,
     insertLevel,
+    deleteLevel,
+    editLevel,
   } = useCanvasStore();
 
   const {
@@ -154,6 +156,12 @@ function CanvasComponent({ className }: CanvasProps) {
           }}
           onAddLevel={(afterLevel) => {
             insertLevel(afterLevel);
+          }}
+          onDeleteLevel={(level) => {
+            deleteLevel(level);
+          }}
+          onEditLevel={(level, newDescription) => {
+            editLevel(level, newDescription);
           }}
         />
       ) : (

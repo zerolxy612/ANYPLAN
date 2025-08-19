@@ -8,6 +8,8 @@ interface LevelBarProps {
   currentLevel?: number;
   onLevelClick?: (levelId: string) => void;
   onAddLevel?: (afterLevel: number) => void;
+  onDeleteLevel?: (level: number) => void;
+  onEditLevel?: (level: number, newDescription: string) => void;
   onThemeToggle?: () => void;
   className?: string;
 }
@@ -17,12 +19,22 @@ const LevelBar: React.FC<LevelBarProps> = ({
   currentLevel = 1,
   onLevelClick,
   onAddLevel,
+  onDeleteLevel,
+  onEditLevel,
   onThemeToggle,
   className
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    level: number;
+  } | null>(null);
+  const [editingLevel, setEditingLevel] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState('');
 
   // 检查滚动状态
   const checkScrollState = () => {
@@ -47,6 +59,54 @@ const LevelBar: React.FC<LevelBarProps> = ({
       setTimeout(checkScrollState, 300);
     }
   };
+
+  // 右键菜单处理
+  const handleContextMenu = (e: React.MouseEvent, level: number) => {
+    e.preventDefault();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      level
+    });
+  };
+
+  const handleDeleteLevel = () => {
+    if (contextMenu && levels.length > 1) { // 至少保留一个层级
+      onDeleteLevel?.(contextMenu.level);
+    }
+    setContextMenu(null);
+  };
+
+  const handleDoubleClick = (level: AILevel) => {
+    setEditingLevel(level.level);
+    setEditingText(level.description);
+  };
+
+  const handleEditSubmit = () => {
+    if (editingLevel !== null && editingText.trim()) {
+      onEditLevel?.(editingLevel, editingText.trim());
+    }
+    setEditingLevel(null);
+    setEditingText('');
+  };
+
+  const handleEditCancel = () => {
+    setEditingLevel(null);
+    setEditingText('');
+  };
+
+  // 点击其他地方关闭右键菜单
+  React.useEffect(() => {
+    const handleClickOutside = () => {
+      setContextMenu(null);
+    };
+
+    if (contextMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenu]);
 
   // 初始化滚动状态检查
   React.useEffect(() => {
@@ -143,7 +203,9 @@ const LevelBar: React.FC<LevelBarProps> = ({
             {/* 层级按钮 */}
             <button
               onClick={() => onLevelClick?.(level.label)}
-            style={{
+              onContextMenu={(e) => handleContextMenu(e, level.level)}
+              onDoubleClick={() => handleDoubleClick(level)}
+              style={{
               padding: '0',
               backgroundColor: level.level === currentLevel ? '#65f0a3' : '#18161a',
               border: level.level === currentLevel ? 'none' : '1px solid #404040',
@@ -188,7 +250,34 @@ const LevelBar: React.FC<LevelBarProps> = ({
               alignItems: 'center',
               gap: '4px'
             }}>
-              {level.description}
+              {editingLevel === level.level ? (
+                <input
+                  type="text"
+                  value={editingText}
+                  onChange={(e) => setEditingText(e.target.value)}
+                  onBlur={handleEditSubmit}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleEditSubmit();
+                    } else if (e.key === 'Escape') {
+                      handleEditCancel();
+                    }
+                  }}
+                  autoFocus
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: 'inherit',
+                    fontSize: 'inherit',
+                    fontWeight: 'inherit',
+                    width: '100px',
+                    minWidth: '60px'
+                  }}
+                />
+              ) : (
+                level.description
+              )}
               {level.nodeCount > 0 && (
                 <span style={{
                   fontSize: '12px',
@@ -265,6 +354,51 @@ const LevelBar: React.FC<LevelBarProps> = ({
         >
           ›
         </button>
+      )}
+
+      {/* 右键菜单 */}
+      {contextMenu && (
+        <div
+          style={{
+            position: 'fixed',
+            top: contextMenu.y,
+            left: contextMenu.x,
+            backgroundColor: '#2a292c',
+            border: '1px solid #404040',
+            borderRadius: '8px',
+            padding: '4px 0',
+            zIndex: 1000,
+            minWidth: '80px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={handleDeleteLevel}
+            disabled={levels.length <= 1}
+            style={{
+              width: '100%',
+              padding: '8px 16px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: levels.length <= 1 ? '#666666' : '#ffffff',
+              cursor: levels.length <= 1 ? 'not-allowed' : 'pointer',
+              textAlign: 'left',
+              fontSize: '14px',
+              transition: 'background-color 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (levels.length > 1) {
+                e.currentTarget.style.backgroundColor = '#404040';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            删除
+          </button>
+        </div>
       )}
     </div>
   );
