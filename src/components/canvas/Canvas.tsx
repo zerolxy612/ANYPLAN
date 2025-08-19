@@ -49,6 +49,7 @@ function CanvasComponent({ className }: CanvasProps) {
     levels,
     currentLevel,
     setCurrentLevel,
+    insertLevel,
   } = useCanvasStore();
 
   const {
@@ -150,6 +151,9 @@ function CanvasComponent({ className }: CanvasProps) {
           onLevelClick={(levelId) => {
             const level = parseInt(levelId.replace('L', ''));
             setCurrentLevel(level);
+          }}
+          onAddLevel={(afterLevel) => {
+            insertLevel(afterLevel);
           }}
         />
       ) : (

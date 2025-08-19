@@ -79,6 +79,28 @@ const generateChatBotResponse = (levelCount: number): string => {
   return CHATBOT_RESPONSE_TEMPLATE(levelCount);
 };
 
+// 生成新层级描述的简单函数
+const generateLevelDescription = async (newLevel: number, originalPrompt: string, existingLevels: AILevel[]): Promise<string> => {
+  // 简单的层级描述生成逻辑
+  const levelDescriptions = [
+    '表层探索', '具体原因', '深层机制', '解决方案', '实施策略', '效果评估'
+  ];
+
+  // 如果有现有层级，尝试智能生成
+  if (existingLevels.length > 0) {
+    const beforeLevel = existingLevels.find(l => l.level === newLevel - 1);
+    const afterLevel = existingLevels.find(l => l.level === newLevel);
+
+    if (beforeLevel && afterLevel) {
+      // 在两个层级之间插入，生成过渡性描述
+      return `${beforeLevel.description}分析`;
+    }
+  }
+
+  // 使用默认描述
+  return levelDescriptions[newLevel - 1] || `第${newLevel}层级`;
+};
+
 // 使用constants中的函数
 import { getNodeBackgroundColor } from '@/lib/canvas/constants';
 
@@ -127,6 +149,7 @@ interface CanvasStore {
   setLevels: (levels: AILevel[]) => void;
   setCurrentLevel: (level: number) => void;
   updateLevelNodeCount: (level: number, count: number) => void;
+  insertLevel: (afterLevel: number) => Promise<void>;
 
   // AI 生成相关
   generateChildren: (nodeId: string, context: NodeContext) => Promise<void>;
@@ -174,7 +197,7 @@ const defaultLoadingState: LoadingState = {
 };
 
 export const useCanvasStore = create<CanvasStore>()(
-  immer((set) => ({
+  immer((set, get) => ({
     // 初始状态
     nodes: [],
     edges: [],
@@ -339,6 +362,67 @@ export const useCanvasStore = create<CanvasStore>()(
         state.levels[levelIndex].nodeCount = count;
       }
     }),
+
+    // 插入新层级
+    insertLevel: async (afterLevel: number) => {
+      console.log('🔄 Inserting level after:', afterLevel);
+
+      set((state) => {
+        state.isAIGenerating = true;
+      });
+
+      try {
+        // 生成新层级的描述
+        const newLevelDescription = await generateLevelDescription(afterLevel + 1, get().originalPrompt, get().levels);
+
+        set((state) => {
+          // 将所有大于afterLevel的层级编号+1
+          state.levels = state.levels.map(level => ({
+            ...level,
+            level: level.level > afterLevel ? level.level + 1 : level.level,
+            label: level.level > afterLevel ? `L${level.level + 1}` : level.label,
+            isActive: false // 重置所有层级的激活状态
+          }));
+
+          // 插入新层级
+          const newLevel: AILevel = {
+            level: afterLevel + 1,
+            label: `L${afterLevel + 1}`,
+            description: newLevelDescription,
+            isActive: true,
+            nodeCount: 0
+          };
+
+          // 在正确位置插入新层级
+          const insertIndex = state.levels.findIndex(l => l.level > afterLevel + 1);
+          if (insertIndex === -1) {
+            state.levels.push(newLevel);
+          } else {
+            state.levels.splice(insertIndex, 0, newLevel);
+          }
+
+          // 设置当前层级为新插入的层级
+          state.currentLevel = afterLevel + 1;
+
+          // 更新所有节点的层级编号
+          state.nodes = state.nodes.map(node => ({
+            ...node,
+            data: {
+              ...node.data,
+              level: node.data.level > afterLevel ? node.data.level + 1 : node.data.level
+            }
+          }));
+        });
+
+        console.log('✅ Level inserted successfully');
+      } catch (error) {
+        console.error('❌ Failed to insert level:', error);
+      } finally {
+        set((state) => {
+          state.isAIGenerating = false;
+        });
+      }
+    },
 
     generateInitialNodes: (analysisResult) => set((state) => {
       // 清空现有节点
