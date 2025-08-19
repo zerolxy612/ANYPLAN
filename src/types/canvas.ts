@@ -116,6 +116,31 @@ export interface ErrorState {
   timestamp: Date;
 }
 
+// AI层级定义
+export interface AILevel {
+  level: number;
+  label: string;        // L1, L2, L3...
+  description: string;  // 表层探索, 具体原因, 解释层级...
+  isActive: boolean;
+  nodeCount: number;
+}
+
+// AI生成的节点数据
+export interface AIGeneratedNode {
+  level: number;
+  content: string;
+  hasChildren: boolean;
+  parentId?: string;
+}
+
+// AI分析结果
+export interface AIAnalysisResult {
+  levelCount: number;
+  levels: AILevel[];
+  initialNodes: AIGeneratedNode[];
+  originalPrompt: string;
+}
+
 // 画布配置
 export interface CanvasConfig {
   maxZoom: number;
