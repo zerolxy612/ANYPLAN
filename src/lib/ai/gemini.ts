@@ -90,7 +90,7 @@ class GeminiService {
   }
 
   // 创建错误对象
-  private createError(code: AIServiceError['code'], message: string, details?: any): AIServiceError {
+  private createError(code: AIServiceError['code'], message: string, details?: Record<string, unknown>): AIServiceError {
     return { code, message, details };
   }
 

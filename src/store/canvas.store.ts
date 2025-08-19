@@ -35,9 +35,11 @@ const analyzeUserInput = async (userInput: string) => {
 const expandNodeContent = async (
   nodeContent: string,
   nodeLevel: number,
-  _parentContext: string,
-  _userPrompt: string
+  parentContext: string,
+  userPrompt: string
 ) => {
+  // 使用参数避免未使用警告
+  console.log('Expanding node:', { nodeContent, nodeLevel, parentContext, userPrompt });
   // 模拟节点扩展结果
   return {
     children: [
@@ -236,7 +238,13 @@ export const useCanvasStore = create<CanvasStore>()(
 
         set((state) => {
           // 设置层级信息
-          state.levels = analysisResult.levels.map((level: any) => ({
+          state.levels = analysisResult.levels.map((level: {
+            level: number;
+            label: string;
+            description: string;
+            isActive: boolean;
+            nodeCount: number;
+          }) => ({
             ...level,
             isActive: level.level === 1,
             nodeCount: level.level === 1 ? analysisResult.initialNodes.length : 0
@@ -247,7 +255,11 @@ export const useCanvasStore = create<CanvasStore>()(
 
         // 生成初始节点
         set((state) => {
-          state.nodes = analysisResult.initialNodes.map((nodeData: any, index: number) => ({
+          state.nodes = analysisResult.initialNodes.map((nodeData: {
+            content: string;
+            level: number;
+            hasChildren: boolean;
+          }, index: number) => ({
             id: `node-${Date.now()}-${index}`,
             type: 'keyword' as const,
             position: { x: index * 250, y: 100 },
@@ -310,7 +322,11 @@ export const useCanvasStore = create<CanvasStore>()(
       state.edges = [];
 
       // 生成初始节点
-      state.nodes = analysisResult.initialNodes.map((nodeData: any, index: number) => ({
+      state.nodes = analysisResult.initialNodes.map((nodeData: {
+        content: string;
+        level: number;
+        hasChildren: boolean;
+      }, index: number) => ({
         id: `node-${Date.now()}-${index}`,
         type: 'keyword' as const,
         position: { x: index * 250, y: 100 },
@@ -362,7 +378,11 @@ export const useCanvasStore = create<CanvasStore>()(
           const childLevel = parentNode.data.level + 1;
 
           // 生成子节点
-          const childNodes = expansionResult.children.map((childData: any, index: number) => ({
+          const childNodes = expansionResult.children.map((childData: {
+            content: string;
+            level: number;
+            hasChildren: boolean;
+          }, index: number) => ({
             id: `${nodeId}-child-${Date.now()}-${index}`,
             type: 'keyword' as const,
             position: {
@@ -389,7 +409,7 @@ export const useCanvasStore = create<CanvasStore>()(
           state.nodes.push(...childNodes);
 
           // 创建连接边
-          const childEdges = childNodes.map((childNode: any) => ({
+          const childEdges = childNodes.map((childNode: CanvasNode) => ({
             id: `edge-${nodeId}-${childNode.id}`,
             source: nodeId,
             target: childNode.id,

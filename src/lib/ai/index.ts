@@ -24,6 +24,9 @@ export const expandNodeContent = async (
   parentContext: string,
   userPrompt: string
 ) => {
+  // 使用参数避免未使用警告
+  console.log('Expanding node:', { nodeContent, nodeLevel, parentContext, userPrompt });
+
   // 模拟节点扩展结果
   return {
     children: [

@@ -55,7 +55,7 @@ function CanvasComponent({ className }: CanvasProps) {
 
 
   // 使用 React Flow 的状态管理，直接使用 store 中的数据
-  const [reactFlowNodes, setReactFlowNodes, onNodesChange] = useNodesState(nodes);
+  const [reactFlowNodes, , onNodesChange] = useNodesState(nodes);
   const [reactFlowEdges, setReactFlowEdges, onEdgesChange] = useEdgesState(edges);
 
   // 不需要同步 useEffect，useNodesState 和 useEdgesState 会自动处理初始数据

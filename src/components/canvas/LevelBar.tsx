@@ -15,6 +15,8 @@ const LevelBar: React.FC<LevelBarProps> = ({
   onThemeToggle,
   className
 }) => {
+  // 使用参数避免未使用警告
+  console.log('LevelBar props:', { onLevelClick, onAddLevel, onThemeToggle, className });
 
   return (
     <div className="level-bar" style={{

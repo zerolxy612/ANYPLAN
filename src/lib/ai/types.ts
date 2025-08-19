@@ -34,7 +34,10 @@ export interface GeminiCandidate {
   content: GeminiContent;
   finishReason?: string;
   index?: number;
-  safetyRatings?: any[];
+  safetyRatings?: Array<{
+    category: string;
+    probability: string;
+  }>;
 }
 
 // AI分析请求
@@ -91,5 +94,5 @@ export interface AIServiceConfig {
 export interface AIServiceError {
   code: 'NETWORK_ERROR' | 'API_ERROR' | 'PARSE_ERROR' | 'TIMEOUT_ERROR';
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
