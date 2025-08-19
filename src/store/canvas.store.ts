@@ -174,7 +174,12 @@ interface CanvasStore {
   reset: () => void;
 }
 
-const defaultViewport: Viewport = { x: 0, y: 0, zoom: 1 };
+// 调整初始viewport，让原始区域(x=50)和前3个层级(x=400,700,1000)都可见
+// 原始区域：x=50, width≈100px
+// L1-L3区域：x=400到x=1300, width=900px
+// 总显示范围：x=50到x=1300，总宽度1250px
+// 设置初始x为-150，让布局更协调
+const defaultViewport: Viewport = { x: -150, y: 0, zoom: 1 };
 
 const defaultConfig: CanvasConfig = {
   maxZoom: 2,
@@ -206,12 +211,8 @@ export const useCanvasStore = create<CanvasStore>()(
     viewport: defaultViewport,
     selectedPath: null,
 
-    // AI相关初始状态 - 临时测试数据
-    levels: [
-      { level: 1, label: 'L1', description: '行为表现', nodeCount: 4, isActive: true },
-      { level: 2, label: 'L2', description: '影响因素', nodeCount: 3, isActive: false },
-      { level: 3, label: 'L3', description: '根本原因', nodeCount: 2, isActive: false }
-    ],
+    // AI相关初始状态 - 用户未操作时为空
+    levels: [],
     currentLevel: 1,
     originalPrompt: '测试问题',
     isAIGenerating: false,

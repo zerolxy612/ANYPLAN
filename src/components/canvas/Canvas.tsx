@@ -154,6 +154,7 @@ function CanvasComponent({ className }: CanvasProps) {
           levels={levels}
           currentLevel={currentLevel}
           viewport={viewport}
+          onViewportChange={setViewport}
           onLevelClick={(levelId) => {
             const level = parseInt(levelId.replace('L', ''));
             setCurrentLevel(level);
@@ -189,7 +190,7 @@ function CanvasComponent({ className }: CanvasProps) {
             color: '#a1a1aa',
             fontSize: '14px'
           }}>
-            请在右侧输入问题开始探索
+            {/* 请在右侧输入问题开始探索 */}
           </div>
         </div>
       )}
@@ -217,7 +218,14 @@ function CanvasComponent({ className }: CanvasProps) {
         fitView
         attributionPosition="bottom-left"
       >
-        {/* 层级背景区域 - 使用SVG实现更好的性能 */}
+        {/* 背景 */}
+        <Background
+          color="#404040"
+          gap={20}
+          size={1}
+        />
+
+        {/* 层级背景区域 - 使用SVG，手动应用viewport变换 */}
         <svg
           style={{
             position: 'absolute',
@@ -226,29 +234,26 @@ function CanvasComponent({ className }: CanvasProps) {
             width: '100%',
             height: '100%',
             pointerEvents: 'none',
-            zIndex: -1,
+            zIndex: 0,
           }}
         >
-          {levels.map((level, index) => (
-            <rect
-              key={level.level}
-              x={400 + (level.level - 1) * 300}
-              y={0}
-              width={300}
-              height="100%"
-              fill={index % 2 === 0 ? '#1a1a1c' : '#161618'}
-              stroke="#2a2a2a"
-              strokeWidth="1"
-            />
-          ))}
+          <g transform={`translate(${viewport.x}, ${viewport.y}) scale(${viewport.zoom})`}>
+            {levels.map((level, index) => (
+              <rect
+                key={level.level}
+                x={400 + (level.level - 1) * 300}
+                y={-1000}
+                width={300}
+                height={3000}
+                fill={index % 2 === 0 ? '#1a1a1c' : '#161618'}
+                stroke="#2a2a2a"
+                strokeWidth="1"
+              />
+            ))}
+          </g>
         </svg>
 
-        {/* 背景 */}
-        <Background
-          color="#404040"
-          gap={20}
-          size={1}
-        />
+
 
         {/* 控制面板 */}
         <Controls
