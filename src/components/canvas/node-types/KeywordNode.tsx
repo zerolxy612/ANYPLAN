@@ -11,7 +11,7 @@ interface KeywordNodeProps extends NodeProps {
 }
 
 const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
-  const [isHovered, setIsHovered] = useState(false);
+  const [, setIsHovered] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const { generateChildren, renewNode, deleteNode, loading } = useCanvasStore();
   

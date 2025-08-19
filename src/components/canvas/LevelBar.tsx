@@ -23,7 +23,9 @@ const LevelBar: React.FC<LevelBarProps> = ({
   onAddLevel,
   onDeleteLevel,
   onEditLevel,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onThemeToggle,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   className,
   viewport,
   onViewportChange
@@ -71,10 +73,7 @@ const LevelBar: React.FC<LevelBarProps> = ({
     setEditingText('');
   };
 
-  const handleEditCancel = () => {
-    setEditingLevel(null);
-    setEditingText('');
-  };
+
 
   // 滑动功能 - 添加丝滑动画效果和边界处理
   const handleSlideLeft = () => {

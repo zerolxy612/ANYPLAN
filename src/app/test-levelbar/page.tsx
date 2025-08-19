@@ -167,7 +167,7 @@ export default function TestLevelBar() {
             color: '#a1a1aa',
             fontSize: '14px'
           }}>
-            点击"添加测试层级"来测试LevelBar功能
+            点击&ldquo;添加测试层级&rdquo;来测试LevelBar功能
           </div>
         </div>
       )}
@@ -182,13 +182,13 @@ export default function TestLevelBar() {
         <div style={{ textAlign: 'center' }}>
           <h2>测试说明</h2>
           <ul style={{ textAlign: 'left', lineHeight: '1.6' }}>
-            <li>点击"添加测试层级"会创建6个测试层级</li>
+            <li>点击&ldquo;添加测试层级&rdquo;会创建6个测试层级</li>
             <li>LevelBar一次最多显示3个层级</li>
             <li>使用左右滚动按钮查看更多层级</li>
             <li>点击层级按钮可以切换当前层级</li>
             <li>双击层级可以编辑描述</li>
             <li>右键点击层级可以删除</li>
-            <li>点击"+"按钮可以添加新层级</li>
+            <li>点击&ldquo;+&rdquo;按钮可以添加新层级</li>
           </ul>
         </div>
       </div>
