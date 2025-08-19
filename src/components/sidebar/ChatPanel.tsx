@@ -35,65 +35,73 @@ const ChatPanel = () => {
   const displayGreeting = greeting || '下午好';
 
   return (
-    <div className="chat-panel">
+    <div className="chat-panel-wrapper">
       {/* 模式切换按钮 */}
-      <div className="mode-buttons">
-        <button
-          className={`mode-button ${mode === 'inquiry' ? 'active' : ''}`}
-          onClick={() => setMode('inquiry')}
-        >
-          <span className="mode-icon">🔍</span>
-          询问模式
-        </button>
-        <button
-          className={`mode-button ${mode === 'writing' ? 'active' : ''}`}
-          onClick={() => setMode('writing')}
-        >
-          <span className="mode-icon">✍️</span>
-          写作模式
-        </button>
+      <div className="mode-toggle">
+        <div className="mode-buttons">
+          <button
+            className={`mode-button ${mode === 'inquiry' ? 'active' : ''}`}
+            onClick={() => setMode('inquiry')}
+          >
+            <span className="mode-icon">🔍</span>
+            询问模式
+          </button>
+          <button
+            className={`mode-button ${mode === 'writing' ? 'active' : ''}`}
+            onClick={() => setMode('writing')}
+          >
+            <span className="mode-icon">✍️</span>
+            写作模式
+          </button>
+        </div>
       </div>
 
-      {/* 问候文本 */}
-      <div className="greeting-section">
-        <h2 className="greeting-title">{displayGreeting}，</h2>
-        <p className="greeting-subtitle">有什么我可以帮你的吗？</p>
-      </div>
+      <div className="chat-panel">
+        {/* 问候文本 */}
+        <div className="greeting-section">
+          <div className="text-block">
+            <h2 className="greeting-title">{displayGreeting}，</h2>
+            <p className="greeting-subtitle">有什么我可以帮你的吗？</p>
+          </div>
 
-      {/* 输入区域 */}
-      <div className="input-section">
-        <div className="input-container">
-          <textarea
-            className="chat-input"
-            placeholder="请输入您的问题或上传文件"
-            rows={3}
-          />
-          <div className="input-footer">
-            <div className="model-info">
-              <span className="model-name">HKGAI V1</span>
-            </div>
-            <div className="input-actions">
-              <button className="action-button" title="附件">
-                📎
-              </button>
-              <button className="action-button" title="语音">
-                🎤
-              </button>
-              <button className="action-button send-button" title="发送">
-                ↑
-              </button>
+          {/* 输入区域 */}
+          <div className="input-section">
+            <div className="input-container">
+              <textarea
+                className="chat-input"
+                placeholder="请输入您的问题或上传文件"
+                rows={3}
+              />
+              <div className="input-footer">
+                <div className="model-info">
+                  <span className="model-name">HKGAI V1</span>
+                </div>
+                <div className="input-actions">
+                  <button className="action-button" title="附件">
+                    📎
+                  </button>
+                  <button className="action-button" title="语音">
+                    🎤
+                  </button>
+                  <button className="action-button send-button" title="发送">
+                    ↑
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <style jsx>{`
-        .chat-panel {
-          padding: 20px;
+        .chat-panel-wrapper {
           height: 100%;
           display: flex;
           flex-direction: column;
-          gap: 24px;
+        }
+
+        .mode-toggle {
+          padding: 20px 20px 0 20px;
         }
 
         .mode-buttons {
@@ -132,13 +140,26 @@ const ChatPanel = () => {
           font-size: 16px;
         }
 
+        .chat-panel {
+          padding: 20px;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
         .greeting-section {
           flex: 1;
           display: flex;
           flex-direction: column;
           justify-content: center;
           align-items: center;
-          text-align: center;
+          gap: 32px;
+        }
+
+        .text-block {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
           gap: 8px;
         }
 
@@ -158,7 +179,7 @@ const ChatPanel = () => {
         }
 
         .input-section {
-          margin-top: auto;
+          width: 100%;
         }
 
         .input-container {
@@ -244,6 +265,10 @@ const ChatPanel = () => {
         }
 
         @media (max-width: 768px) {
+          .mode-toggle {
+            padding: 16px 16px 0 16px;
+          }
+
           .chat-panel {
             padding: 16px;
             gap: 20px;
