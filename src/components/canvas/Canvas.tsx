@@ -9,6 +9,8 @@ import {
   Edge,
   ReactFlowProvider,
   Panel,
+  NodeChange,
+  EdgeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -84,12 +86,12 @@ function CanvasComponent({ className }: CanvasProps) {
 
 
   // 直接使用 store 中的数据，不使用 React Flow 的内部状态
-  const onNodesChange = useCallback((changes: any) => {
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
     console.log('🔄 Canvas: Nodes changed:', changes);
     // 这里可以处理节点变化，比如位置更新等
   }, []);
 
-  const onEdgesChange = useCallback((changes: any) => {
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
     console.log('🔄 Canvas: Edges changed:', changes);
     // 这里可以处理边变化
   }, []);

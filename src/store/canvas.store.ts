@@ -14,6 +14,7 @@ import {
   AIAnalysisResult,
   KeywordNodeData
 } from '@/types/canvas';
+import { NodeExpansionResult } from '@/lib/ai/types';
 import { geminiService } from '@/lib/ai/gemini';
 import { CHATBOT_RESPONSE_TEMPLATE } from '@/lib/ai/prompts';
 // AI 辅助函数 - 使用真实的 Gemini API
@@ -54,7 +55,7 @@ const expandNodeContent = async (
   nodeLevel: number,
   parentContext: string,
   userPrompt: string
-) => {
+): Promise<NodeExpansionResult> => {
   try {
     const result = await geminiService.expandNode({
       nodeContent,
@@ -74,7 +75,11 @@ const expandNodeContent = async (
 };
 
 // 生成降级内容的函数
-const generateFallbackContent = (nodeContent: string, nodeLevel: number) => {
+const generateFallbackContent = (nodeContent: string, nodeLevel: number): Array<{
+  content: string;
+  level: number;
+  hasChildren: boolean;
+}> => {
   const baseContent = nodeContent || '拖延症';
 
   switch (nodeLevel) {
