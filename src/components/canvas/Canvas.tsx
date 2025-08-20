@@ -5,9 +5,6 @@ import {
   ReactFlow,
   Background,
   Controls,
-  useNodesState,
-  useEdgesState,
-  addEdge,
   Connection,
   Edge,
   ReactFlowProvider,
@@ -18,15 +15,15 @@ import '@xyflow/react/dist/style.css';
 import { useCanvasStore } from '@/store/canvas.store';
 import { useCanvasActions } from './hooks/useCanvasActions';
 import KeywordNode from './node-types/KeywordNode';
-import OriginalNode from './node-types/OriginalNode';
+
 import DefaultEdge from './edges/DefaultEdge';
 import LevelBar from './LevelBar';
 import OriginalNodeComponent from './OriginalNode';
 
+
 // 节点类型映射
 const nodeTypes = {
   keyword: KeywordNode,
-  original: OriginalNode,
 };
 
 // 边类型映射
@@ -57,6 +54,7 @@ function CanvasComponent({ className }: CanvasProps) {
     deleteLevel,
     editLevel,
     originalPrompt,
+
   } = useCanvasStore();
 
   const {
@@ -77,11 +75,18 @@ function CanvasComponent({ className }: CanvasProps) {
 
 
 
-  // 使用 React Flow 的状态管理，直接使用 store 中的数据
-  const [reactFlowNodes, , onNodesChange] = useNodesState(nodes);
-  const [reactFlowEdges, setReactFlowEdges, onEdgesChange] = useEdgesState(edges);
 
-  // 不需要同步 useEffect，useNodesState 和 useEdgesState 会自动处理初始数据
+
+  // 直接使用 store 中的数据，不使用 React Flow 的内部状态
+  const onNodesChange = useCallback((changes: any) => {
+    console.log('🔄 Canvas: Nodes changed:', changes);
+    // 这里可以处理节点变化，比如位置更新等
+  }, []);
+
+  const onEdgesChange = useCallback((changes: any) => {
+    console.log('🔄 Canvas: Edges changed:', changes);
+    // 这里可以处理边变化
+  }, []);
 
   // 连接处理
   const onConnect = useCallback(
@@ -91,9 +96,11 @@ function CanvasComponent({ className }: CanvasProps) {
         id: `edge-${params.source}-${params.target}`,
         type: 'default',
       } as Edge;
-      setReactFlowEdges((eds) => addEdge(newEdge, eds));
+      // 直接更新 store 中的边
+      // TODO: 实现 addEdge 到 store
+      console.log('🔗 Adding edge:', newEdge);
     },
-    [setReactFlowEdges]
+    []
   );
 
   // 视口变化处理
@@ -216,8 +223,8 @@ function CanvasComponent({ className }: CanvasProps) {
         tabIndex={0}
       >
         <ReactFlow
-        nodes={reactFlowNodes}
-        edges={reactFlowEdges}
+        nodes={nodes}
+        edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
@@ -313,6 +320,7 @@ function CanvasComponent({ className }: CanvasProps) {
           viewport={viewport}
         />
       )}
+
       </div>
 
       <style jsx>{`

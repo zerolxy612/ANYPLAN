@@ -65,13 +65,43 @@ const expandNodeContent = async (
     return result;
   } catch (error) {
     console.error('Node expansion failed, using fallback:', error);
-    // 降级处理：返回默认子节点
+    // 降级处理：返回默认子节点，根据层级生成不同内容
+    const fallbackContent = generateFallbackContent(nodeContent, nodeLevel);
     return {
-      children: [
-        { content: `${nodeContent} - 子项1`, level: nodeLevel + 1, hasChildren: true },
-        { content: `${nodeContent} - 子项2`, level: nodeLevel + 1, hasChildren: true }
-      ]
+      children: fallbackContent
     };
+  }
+};
+
+// 生成降级内容的函数
+const generateFallbackContent = (nodeContent: string, nodeLevel: number) => {
+  const baseContent = nodeContent || '拖延症';
+
+  switch (nodeLevel) {
+    case 0: // 原始节点 -> L1
+      return [
+        { content: '完美主义', level: 1, hasChildren: true },
+        { content: '缺乏动力', level: 1, hasChildren: true },
+        { content: '没有目标', level: 1, hasChildren: true }
+      ];
+    case 1: // L1 -> L2
+      return [
+        { content: `${baseContent}的具体表现和影响`, level: 2, hasChildren: true },
+        { content: `${baseContent}背后的心理原因`, level: 2, hasChildren: true },
+        { content: `${baseContent}在日常生活中的体现`, level: 2, hasChildren: true }
+      ];
+    case 2: // L2 -> L3
+      return [
+        { content: `深入分析${baseContent}的根本原因和触发因素`, level: 3, hasChildren: true },
+        { content: `探索${baseContent}与个人价值观和信念的关系`, level: 3, hasChildren: true },
+        { content: `理解${baseContent}对个人成长和目标实现的阻碍`, level: 3, hasChildren: true }
+      ];
+    default:
+      return [
+        { content: `${baseContent} - 选项1`, level: nodeLevel + 1, hasChildren: true },
+        { content: `${baseContent} - 选项2`, level: nodeLevel + 1, hasChildren: true },
+        { content: `${baseContent} - 选项3`, level: nodeLevel + 1, hasChildren: true }
+      ];
   }
 };
 
@@ -307,65 +337,11 @@ export const useCanvasStore = create<CanvasStore>()(
           state.currentLevel = 1;
         });
 
-        // 生成原始节点和初始节点
+        // 只清空现有节点，不自动创建初始节点
         set((state) => {
           // 清空现有节点
           state.nodes = [];
           state.edges = [];
-
-          // 创建原始节点（最左侧）
-          const originalNode = {
-            id: `original-${Date.now()}`,
-            type: 'original' as const,
-            position: { x: 50, y: 100 },
-            data: {
-              id: `original-${Date.now()}`,
-              content: userInput,
-              level: 0,
-              type: 'original' as const,
-              originalPrompt: userInput,
-              isRoot: true as const,
-              isGenerating: false,
-              isSelected: false,
-            },
-          };
-
-          // 创建初始关键词节点
-          const keywordNodes = analysisResult.initialNodes.map((nodeData: {
-            content: string;
-            level: number;
-            hasChildren: boolean;
-          }, index: number) => ({
-            id: `node-${Date.now()}-${index}`,
-            type: 'keyword' as const,
-            position: { x: 320 + index * 250, y: 100 }, // 更靠近原始节点和生成按钮
-            data: {
-              id: `node-${Date.now()}-${index}`,
-              content: nodeData.content,
-              level: nodeData.level,
-              type: 'keyword' as const,
-              canExpand: nodeData.hasChildren,
-              hasChildren: nodeData.hasChildren,
-              isGenerating: false,
-              isSelected: false,
-            } as KeywordNodeData,
-            style: {
-              backgroundColor: getNodeBackgroundColor(nodeData.level),
-            }
-          }));
-
-          // 添加所有节点
-          state.nodes = [originalNode, ...keywordNodes];
-
-          // 创建从原始节点到第一个关键词节点的连接
-          if (keywordNodes.length > 0) {
-            state.edges = [{
-              id: `edge-original-${keywordNodes[0].id}`,
-              source: originalNode.id,
-              target: keywordNodes[0].id,
-              type: 'default',
-            }];
-          }
         });
 
         return generateChatBotResponse(analysisResult.levelCount);
@@ -599,6 +575,77 @@ export const useCanvasStore = create<CanvasStore>()(
       });
 
       try {
+        // 特殊处理原始节点的生成
+        if (nodeId === 'original-node') {
+          console.log('🎯 Generating children for original node');
+
+          // 为原始节点生成L1层级的3个选项
+          const expansionResult = await expandNodeContent(
+            context.parentContent || '',
+            0, // 原始节点层级为0
+            '',
+            useCanvasStore.getState().originalPrompt || ''
+          );
+
+          console.log('📊 Analysis result:', expansionResult);
+
+          set((state) => {
+            console.log('🔄 Before adding nodes, current nodes count:', state.nodes.length);
+
+            // 计算L1区域的位置
+            const l1AreaX = 400; // L1区域开始位置
+            const l1AreaWidth = 300; // L1区域宽度
+            const canvasCenterY = 300; // 画布垂直居中
+
+            // 生成3个选项节点，垂直排列在L1区域内
+            const childNodes = expansionResult.children.map((childData: {
+              content: string;
+              level: number;
+              hasChildren: boolean;
+            }, index: number) => {
+              const newNode = {
+                id: `l1-node-${Date.now()}-${index}`,
+                type: 'keyword' as const,
+                position: {
+                  x: l1AreaX + l1AreaWidth / 2 - 100, // 在L1区域中心，节点宽度200px的一半
+                  y: canvasCenterY - 100 + index * 120 // 垂直排列，间距120px
+                },
+                data: {
+                  id: `l1-node-${Date.now()}-${index}`,
+                  content: childData.content,
+                  level: 1, // L1层级
+                  parentId: 'original-node',
+                  type: 'keyword' as const,
+                  canExpand: childData.hasChildren,
+                  hasChildren: childData.hasChildren,
+                  isGenerating: false,
+                  isSelected: false,
+                } as KeywordNodeData,
+                style: {
+                  backgroundColor: getNodeBackgroundColor(1),
+                }
+              };
+              console.log('🆕 Creating new node:', newNode);
+              return newNode;
+            });
+
+            // 添加子节点到画布
+            state.nodes.push(...childNodes);
+            console.log('✅ After adding nodes, current nodes count:', state.nodes.length);
+
+            // 更新L1层级的节点数量
+            const l1Level = state.levels.find(l => l.level === 1);
+            if (l1Level) {
+              l1Level.nodeCount = childNodes.length;
+              console.log('📈 Updated L1 level node count:', l1Level.nodeCount);
+            }
+          });
+
+          console.log('🎉 Original node generation completed');
+          return;
+        }
+
+        // 处理其他节点的生成
         const parentNode = useCanvasStore.getState().nodes.find(n => n.id === nodeId);
         if (!parentNode || !parentNode.data) {
           throw new Error('Parent node not found');

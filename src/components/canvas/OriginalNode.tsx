@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useCanvasStore } from '@/store/canvas.store';
 
 interface OriginalNodeProps {
   content: string;
@@ -15,22 +16,50 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
   onGenerateNext,
   viewport
 }) => {
+  const { generateChildren, loading, originalPrompt } = useCanvasStore();
   const zoom = viewport?.zoom || 1;
   const offsetX = viewport?.x || 0;
   const offsetY = viewport?.y || 0;
 
+  // 处理生成下一层级
+  const handleGenerateNext = async () => {
+    if (loading.isGenerating) return;
+
+    try {
+      // 创建一个虚拟的原始节点ID用于生成
+      const originalNodeId = 'original-node';
+
+      // 调用生成子节点功能
+      await generateChildren(originalNodeId, {
+        parentContent: content,
+        siblingContents: [],
+        level: 1, // 生成L1层级的节点
+        userPrompt: originalPrompt || content,
+        fullPath: [content],
+      });
+
+      // 调用外部回调
+      onGenerateNext?.();
+    } catch (error) {
+      console.error('生成下一层级失败:', error);
+    }
+  };
+
   // L1区域分界线位置
   const l1BoundaryX = 400;
 
-  // 生成下一层级按钮位置（固定在L1分界线上）
-  const nextButtonX = l1BoundaryX * zoom + offsetX;
-  const nextButtonY = 200 * zoom + offsetY + (60 * zoom) / 2 - 16;  // 与节点垂直居中对齐
+  // 画布垂直居中位置（假设画布高度，可以根据实际容器调整）
+  const canvasCenterY = 300;  // 画布垂直居中位置
 
-  // 原始节点位置（向右调整，使整体更协调）
-  const nodeX = 200;  // 向右移动，给重新生成按钮留出空间
-  const nodeY = 200;
-  const nodeWidth = 160;  // 调整宽度，使整体更紧凑
+  // 生成下一层级按钮位置（固定在L1分界线上，垂直居中）
+  const nextButtonX = l1BoundaryX * zoom + offsetX - 16;  // 按钮中心对齐分界线（按钮宽度32px的一半）
+  const nextButtonY = canvasCenterY * zoom + offsetY - 16;  // 垂直居中（按钮高度32px的一半）
+
+  // 原始节点位置（基于生成按钮位置反推，确保整体协调）
+  const nodeWidth = 160;
   const nodeHeight = 60;
+  const nodeX = l1BoundaryX - nodeWidth - 40;  // 距离分界线40px
+  const nodeY = canvasCenterY - nodeHeight / 2;  // 垂直居中
 
   // 应用viewport变换
   const transformedX = nodeX * zoom + offsetX;
@@ -38,9 +67,9 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
   const transformedWidth = nodeWidth * zoom;
   const transformedHeight = nodeHeight * zoom;
 
-  // 重新生成按钮位置（节点左侧）
-  const regenerateButtonX = transformedX - 50;  // 节点左侧50px
-  const regenerateButtonY = transformedY + transformedHeight / 2 - 16;  // 垂直居中
+  // 重新生成按钮位置（节点左侧50px，垂直居中）
+  const regenerateButtonX = transformedX - 50;
+  const regenerateButtonY = transformedY + transformedHeight / 2 - 16;
 
   return (
     <div
@@ -165,7 +194,8 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
 
       {/* 生成下一层级按钮 */}
       <button
-        onClick={onGenerateNext}
+        onClick={handleGenerateNext}
+        disabled={loading.isGenerating}
         style={{
           position: 'absolute',
           left: `${nextButtonX}px`,

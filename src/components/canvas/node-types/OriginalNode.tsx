@@ -3,12 +3,46 @@
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { OriginalNodeData } from '@/types/canvas';
+import { useCanvasStore } from '@/store/canvas.store';
 
 interface OriginalNodeProps extends NodeProps {
   data: OriginalNodeData;
 }
 
 const OriginalNode = memo(({ data, selected }: OriginalNodeProps) => {
+  const { generateChildren, loading, viewport } = useCanvasStore();
+
+  // 处理生成下一层级
+  const handleGenerateNext = async () => {
+    if (loading.isGenerating) return;
+
+    try {
+      // 调用生成子节点功能
+      await generateChildren('original-node', {
+        parentContent: data.content,
+        siblingContents: [],
+        level: 1, // 生成L1层级的节点
+        userPrompt: data.originalPrompt || data.content,
+        fullPath: [data.content],
+      });
+    } catch (error) {
+      console.error('生成下一层级失败:', error);
+    }
+  };
+
+  // 计算"生成下一层级"按钮的位置
+  const calculateNextLevelButtonPosition = () => {
+    const l1BoundaryX = 400; // L1区域分界线
+    const zoom = viewport?.zoom || 1;
+    const offsetX = viewport?.x || 0;
+    const offsetY = viewport?.y || 0;
+
+    return {
+      x: l1BoundaryX * zoom + offsetX - 16, // 按钮中心对齐分界线
+      y: 300 * zoom + offsetY - 16 // 垂直居中
+    };
+  };
+
   return (
     <div
       className="original-node"
@@ -36,6 +70,49 @@ const OriginalNode = memo(({ data, selected }: OriginalNodeProps) => {
           {data.content}
         </div>
       </div>
+
+      {/* 生成下一层级按钮 */}
+      <button
+        onClick={handleGenerateNext}
+        disabled={loading.isGenerating}
+        style={{
+          position: 'fixed',
+          left: `${calculateNextLevelButtonPosition().x}px`,
+          top: `${calculateNextLevelButtonPosition().y}px`,
+          width: '32px',
+          height: '32px',
+          borderRadius: '50%',
+          backgroundColor: loading.isGenerating ? '#404040' : '#606060',
+          border: 'none',
+          color: '#ffffff',
+          cursor: loading.isGenerating ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          transition: 'all 0.2s ease',
+          zIndex: 1000,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+        }}
+        onMouseEnter={(e) => {
+          if (!loading.isGenerating) {
+            e.currentTarget.style.backgroundColor = '#65f0a3';
+            e.currentTarget.style.color = '#000000';
+            e.currentTarget.style.transform = 'scale(1.1)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!loading.isGenerating) {
+            e.currentTarget.style.backgroundColor = '#606060';
+            e.currentTarget.style.color = '#ffffff';
+            e.currentTarget.style.transform = 'scale(1)';
+          }
+        }}
+        title="生成L1层级内容"
+      >
+        {loading.isGenerating ? '...' : '›'}
+      </button>
 
       {/* 右侧连接点 */}
       <Handle

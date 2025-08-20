@@ -2,11 +2,14 @@
 
 import React, { useState } from 'react';
 import LevelBar from '@/components/canvas/LevelBar';
+import OriginalNode from '@/components/canvas/OriginalNode';
 import { AILevel } from '@/types/canvas';
 
 export default function TestLevelBar() {
   const [levels, setLevels] = useState<AILevel[]>([]);
   const [currentLevel, setCurrentLevel] = useState(1);
+  const [showOriginalNode, setShowOriginalNode] = useState(false);
+  const [viewport, setViewport] = useState({ x: -150, y: 0, zoom: 1 });
 
   const addTestLevels = () => {
     const testLevels: AILevel[] = [
@@ -131,6 +134,20 @@ export default function TestLevelBar() {
           >
             清空层级
           </button>
+          <button
+            onClick={() => setShowOriginalNode(!showOriginalNode)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: showOriginalNode ? '#65f0a3' : '#606060',
+              color: showOriginalNode ? '#000000' : '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            {showOriginalNode ? '隐藏' : '显示'}原始节点
+          </button>
+
         </div>
         <p style={{ color: '#a1a1aa', marginTop: '10px' }}>
           当前层级数量: {levels.length} | 当前激活层级: L{currentLevel}
@@ -172,6 +189,52 @@ export default function TestLevelBar() {
         </div>
       )}
 
+      {/* 画布区域 */}
+      {showOriginalNode && (
+        <div style={{
+          position: 'relative',
+          height: '400px',
+          backgroundColor: '#161618',
+          border: '1px solid #404040',
+          margin: '20px',
+          borderRadius: '8px',
+          overflow: 'hidden'
+        }}>
+          {/* 层级背景区域 */}
+          {levels.map((level, index) => (
+            <div
+              key={level.level}
+              style={{
+                position: 'absolute',
+                left: `${400 + (level.level - 1) * 300 + viewport.x}px`,
+                top: '0',
+                width: '300px',
+                height: '100%',
+                backgroundColor: index % 2 === 0 ? '#1a1a1c' : '#161618',
+                border: '1px solid #2a2a2a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#666',
+                fontSize: '24px',
+                fontWeight: 'bold'
+              }}
+            >
+              L{level.level}
+            </div>
+          ))}
+
+          {/* 原始节点 */}
+          <OriginalNode
+            content="拖延症"
+            viewport={viewport}
+            onRegenerate={() => console.log('重新生成')}
+            onGenerateNext={() => console.log('生成下一层级')}
+          />
+
+        </div>
+      )}
+
       <div style={{
         flex: 1,
         display: 'flex',
@@ -183,12 +246,14 @@ export default function TestLevelBar() {
           <h2>测试说明</h2>
           <ul style={{ textAlign: 'left', lineHeight: '1.6' }}>
             <li>点击&ldquo;添加测试层级&rdquo;会创建6个测试层级</li>
+            <li>点击&ldquo;显示原始节点&rdquo;可以测试原始节点功能</li>
             <li>LevelBar一次最多显示3个层级</li>
             <li>使用左右滚动按钮查看更多层级</li>
             <li>点击层级按钮可以切换当前层级</li>
             <li>双击层级可以编辑描述</li>
             <li>右键点击层级可以删除</li>
             <li>点击&ldquo;+&rdquo;按钮可以添加新层级</li>
+            <li>点击原始节点右侧的&ldquo;›&rdquo;按钮生成L1层级的3个选项</li>
           </ul>
         </div>
       </div>

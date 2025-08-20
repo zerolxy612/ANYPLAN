@@ -13,11 +13,25 @@ interface KeywordNodeProps extends NodeProps {
 const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const [, setIsHovered] = useState(false);
   const [showActions, setShowActions] = useState(false);
-  const { generateChildren, renewNode, deleteNode, loading } = useCanvasStore();
-  
+  const { generateChildren, renewNode, deleteNode, loading, viewport } = useCanvasStore();
+
   const levelColor = getLevelColor(data.level);
   const isGenerating = loading.isGenerating;
   const isRenewing = loading.renewingNodeId === data.id;
+
+  // 计算"生成下一层级"按钮的位置（位于当前层级和下一层级的分界线上）
+  const calculateNextLevelButtonPosition = () => {
+    const currentLevelX = 400 + (data.level - 1) * 300; // 当前层级区域起始位置
+    const nextLevelX = currentLevelX + 300; // 下一层级区域起始位置
+    const zoom = viewport?.zoom || 1;
+    const offsetX = viewport?.x || 0;
+    const offsetY = viewport?.y || 0;
+
+    return {
+      x: nextLevelX * zoom + offsetX - 16, // 按钮中心对齐分界线
+      y: 300 * zoom + offsetY - 16 // 垂直居中
+    };
+  };
   
   const handleGenerateChildren = async () => {
     if (data.canExpand && !isGenerating) {
@@ -53,7 +67,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
       style={{
         borderColor: selected ? '#65f0a3' : '#404040',
         borderWidth: selected ? '2px' : '1px',
-        backgroundColor: levelColor,
+        backgroundColor: selected ? '#65f0a3' : levelColor,
         boxShadow: selected ? `0 0 0 2px #65f0a320` : '0 1px 3px rgba(0, 0, 0, 0.3)',
       }}
       onMouseEnter={() => {
@@ -141,7 +155,52 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           style={{ backgroundColor: levelColor }}
         />
       )}
-      
+
+      {/* 生成下一层级按钮 - 仅在选中时显示 */}
+      {selected && data.canExpand && data.level < 6 && (
+        <button
+          onClick={handleGenerateChildren}
+          disabled={isGenerating}
+          style={{
+            position: 'fixed',
+            left: `${calculateNextLevelButtonPosition().x}px`,
+            top: `${calculateNextLevelButtonPosition().y}px`,
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            backgroundColor: isGenerating ? '#404040' : '#606060',
+            border: 'none',
+            color: '#ffffff',
+            cursor: isGenerating ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            transition: 'all 0.2s ease',
+            zIndex: 1000,
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+          }}
+          onMouseEnter={(e) => {
+            if (!isGenerating) {
+              e.currentTarget.style.backgroundColor = '#65f0a3';
+              e.currentTarget.style.color = '#000000';
+              e.currentTarget.style.transform = 'scale(1.1)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isGenerating) {
+              e.currentTarget.style.backgroundColor = '#606060';
+              e.currentTarget.style.color = '#ffffff';
+              e.currentTarget.style.transform = 'scale(1)';
+            }
+          }}
+          title={`生成L${data.level + 1}层级内容`}
+        >
+          {isGenerating ? '...' : '›'}
+        </button>
+      )}
+
       <style jsx>{`
         .keyword-node {
           min-width: 200px;
