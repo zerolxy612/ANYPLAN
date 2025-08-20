@@ -109,6 +109,32 @@ const generateChatBotResponse = (levelCount: number): string => {
   return CHATBOT_RESPONSE_TEMPLATE(levelCount);
 };
 
+// 层级区域布局函数 - 只用于L2及后续层级
+const getLevelAreaX = (level: number): number => {
+  if (level <= 1) {
+    // L1及之前保持原有逻辑，不使用此函数
+    return 400; // L1区域起始位置
+  }
+
+  // L2开始使用固定区域布局
+  const l1AreaX = 400;
+  const levelWidth = 300;
+  return l1AreaX + (level - 1) * levelWidth;
+};
+
+// 计算子节点垂直位置 - 中间节点与父节点对齐
+const calculateChildVerticalPositions = (parentY: number, childCount: number): number[] => {
+  if (childCount === 1) {
+    return [parentY]; // 单个子节点直接对齐父节点
+  }
+
+  const spacing = Math.max(60, Math.min(120, 300 / Math.max(childCount - 1, 1)));
+  const totalHeight = (childCount - 1) * spacing;
+  const startY = parentY - totalHeight / 2;
+
+  return Array.from({ length: childCount }, (_, index) => startY + index * spacing);
+};
+
 // 生成新层级描述的简单函数
 const generateLevelDescription = async (newLevel: number, originalPrompt: string, existingLevels: AILevel[]): Promise<string> => {
   // 简单的层级描述生成逻辑
@@ -651,6 +677,11 @@ export const useCanvasStore = create<CanvasStore>()(
           const parentNode = state.nodes[parentNodeIndex];
           const childLevel = parentNode.data.level + 1;
 
+          // 计算子节点位置 - 使用层级区域布局，中间节点与父节点对齐
+          const levelAreaX = getLevelAreaX(childLevel);
+          const levelCenterX = levelAreaX + 150; // 层级区域中心
+          const yPositions = calculateChildVerticalPositions(parentNode.position.y, expansionResult.children.length);
+
           // 生成子节点
           const childNodes = expansionResult.children.map((childData: {
             content: string;
@@ -660,8 +691,8 @@ export const useCanvasStore = create<CanvasStore>()(
             id: `${nodeId}-child-${Date.now()}-${index}`,
             type: 'keyword' as const,
             position: {
-              x: parentNode.position.x + (index - expansionResult.children.length / 2) * 200,
-              y: parentNode.position.y + 150
+              x: levelCenterX - 100, // 节点宽度200px的一半，在层级区域中心
+              y: yPositions[index] // 使用计算好的垂直位置
             },
             data: {
               id: `${nodeId}-child-${Date.now()}-${index}`,

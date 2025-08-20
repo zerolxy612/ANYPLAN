@@ -29,25 +29,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const isRenewing = loading.renewingNodeId === data.id;
   const nodeSelected = isNodeSelected(data.id);
 
-  // 计算"生成下一层级"按钮的位置（位于当前层级和下一层级的分界线上）
-  const calculateNextLevelButtonPosition = () => {
-    const currentLevelX = 400 + (data.level - 1) * 300; // 当前层级区域起始位置
-    const nextLevelX = currentLevelX + 300; // 下一层级区域起始位置
 
-    // 获取当前节点的实际位置（不考虑viewport变换，因为按钮使用fixed定位）
-    const nodeElement = document.querySelector(`[data-id="${data.id}"]`);
-    if (!nodeElement) {
-      return { x: nextLevelX - 16, y: 300 - 16 };
-    }
-
-    const nodeRect = nodeElement.getBoundingClientRect();
-    const nodeY = nodeRect.top + nodeRect.height / 2; // 节点垂直中心
-
-    return {
-      x: nextLevelX - 16, // 按钮中心对齐分界线（不需要viewport变换，因为使用fixed定位）
-      y: nodeY - 16 // 与当前节点垂直对齐
-    };
-  };
   
   const handleGenerateChildren = async () => {
     if (data.canExpand && !isGenerating) {
@@ -177,46 +159,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
 
 
 
-      {/* 生成下一层级按钮 */}
-      {nodeSelected && data.canExpand && !isGenerating && !isRenewing && (
-        <button
-          style={{
-            position: 'fixed',
-            left: `${calculateNextLevelButtonPosition().x}px`,
-            top: `${calculateNextLevelButtonPosition().y}px`,
-            width: '32px',
-            height: '32px',
-            borderRadius: '50%',
-            border: 'none',
-            backgroundColor: '#65f0a3',
-            color: '#ffffff',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-            transition: 'all 0.2s ease',
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleGenerateChildren();
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.1)';
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
-            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
-          }}
-          title="生成下一层级"
-        >
-          +
-        </button>
-      )}
+
 
       <style jsx>{`
         .keyword-node {
