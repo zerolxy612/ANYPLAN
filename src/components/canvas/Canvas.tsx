@@ -235,7 +235,6 @@ function CanvasComponent({ className }: CanvasProps) {
         defaultViewport={config.defaultViewport}
         minZoom={config.minZoom}
         maxZoom={config.maxZoom}
-        fitView
         attributionPosition="bottom-left"
       >
         {/* 背景 */}

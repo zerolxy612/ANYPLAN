@@ -29,9 +29,10 @@ const DefaultEdge = memo(({
       <path
         id={id}
         style={{
-          stroke: selected ? '#3b82f6' : '#94a3b8',
+          stroke: selected ? '#65f0a3' : '#65f0a3',
           strokeWidth: selected ? 3 : 2,
           fill: 'none',
+          opacity: 0.8,
           ...style,
         }}
         className="react-flow__edge-path"

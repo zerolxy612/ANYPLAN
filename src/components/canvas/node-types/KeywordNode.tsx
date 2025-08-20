@@ -13,6 +13,7 @@ interface KeywordNodeProps extends NodeProps {
 const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const [, setIsHovered] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [isSelected, setIsSelected] = useState(false);
   const { generateChildren, renewNode, deleteNode, loading, viewport } = useCanvasStore();
 
   const levelColor = getLevelColor(data.level);
@@ -23,13 +24,19 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const calculateNextLevelButtonPosition = () => {
     const currentLevelX = 400 + (data.level - 1) * 300; // 当前层级区域起始位置
     const nextLevelX = currentLevelX + 300; // 下一层级区域起始位置
-    const zoom = viewport?.zoom || 1;
-    const offsetX = viewport?.x || 0;
-    const offsetY = viewport?.y || 0;
+
+    // 获取当前节点的实际位置（不考虑viewport变换，因为按钮使用fixed定位）
+    const nodeElement = document.querySelector(`[data-id="${data.id}"]`);
+    if (!nodeElement) {
+      return { x: nextLevelX - 16, y: 300 - 16 };
+    }
+
+    const nodeRect = nodeElement.getBoundingClientRect();
+    const nodeY = nodeRect.top + nodeRect.height / 2; // 节点垂直中心
 
     return {
-      x: nextLevelX * zoom + offsetX - 16, // 按钮中心对齐分界线
-      y: 300 * zoom + offsetY - 16 // 垂直居中
+      x: nextLevelX - 16, // 按钮中心对齐分界线（不需要viewport变换，因为使用fixed定位）
+      y: nodeY - 16 // 与当前节点垂直对齐
     };
   };
   
@@ -63,13 +70,14 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   
   return (
     <div
-      className="keyword-node"
+      className={`keyword-node ${selected || isSelected ? 'selected' : ''}`}
       style={{
-        borderColor: selected ? '#65f0a3' : '#404040',
-        borderWidth: selected ? '2px' : '1px',
-        backgroundColor: selected ? '#65f0a3' : levelColor,
-        boxShadow: selected ? `0 0 0 2px #65f0a320` : '0 1px 3px rgba(0, 0, 0, 0.3)',
+        borderColor: (selected || isSelected) ? '#65f0a3' : '#404040',
+        borderWidth: (selected || isSelected) ? '2px' : '1px',
+        backgroundColor: (selected || isSelected) ? '#65f0a3' : levelColor,
+        boxShadow: (selected || isSelected) ? `0 0 0 2px #65f0a320` : '0 1px 3px rgba(0, 0, 0, 0.3)',
       }}
+      onClick={() => setIsSelected(!isSelected)}
       onMouseEnter={() => {
         setIsHovered(true);
         setShowActions(true);
@@ -79,14 +87,6 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         setShowActions(false);
       }}
     >
-      {/* 层级指示器 */}
-      <div
-        className="level-indicator"
-        style={{ backgroundColor: levelColor }}
-      >
-        L{data.level}
-      </div>
-      
       {/* 节点内容 */}
       <div className="node-content">
         <div className="content-text">
@@ -156,11 +156,11 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         />
       )}
 
-      {/* 生成下一层级按钮 - 仅在选中时显示 */}
-      {selected && data.canExpand && data.level < 6 && (
+
+
+      {/* 生成下一层级按钮 */}
+      {isSelected && data.canExpand && !isGenerating && !isRenewing && (
         <button
-          onClick={handleGenerateChildren}
-          disabled={isGenerating}
           style={{
             position: 'fixed',
             left: `${calculateNextLevelButtonPosition().x}px`,
@@ -168,44 +168,44 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
             width: '32px',
             height: '32px',
             borderRadius: '50%',
-            backgroundColor: isGenerating ? '#404040' : '#606060',
             border: 'none',
+            backgroundColor: '#65f0a3',
             color: '#ffffff',
-            cursor: isGenerating ? 'not-allowed' : 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            transition: 'all 0.2s ease',
-            zIndex: 1000,
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+            transition: 'all 0.2s ease',
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleGenerateChildren();
           }}
           onMouseEnter={(e) => {
-            if (!isGenerating) {
-              e.currentTarget.style.backgroundColor = '#65f0a3';
-              e.currentTarget.style.color = '#000000';
-              e.currentTarget.style.transform = 'scale(1.1)';
-            }
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
           }}
           onMouseLeave={(e) => {
-            if (!isGenerating) {
-              e.currentTarget.style.backgroundColor = '#606060';
-              e.currentTarget.style.color = '#ffffff';
-              e.currentTarget.style.transform = 'scale(1)';
-            }
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
           }}
-          title={`生成L${data.level + 1}层级内容`}
+          title="生成下一层级"
         >
-          {isGenerating ? '...' : '›'}
+          +
         </button>
       )}
 
       <style jsx>{`
         .keyword-node {
-          min-width: 200px;
-          min-height: 80px;
-          border-radius: 8px;
+          min-width: 240px;
+          max-width: 240px;
+          min-height: 50px;
+          max-height: 50px;
+          border-radius: 25px;
           border: 1px solid #e2e8f0;
           background: white;
           position: relative;
@@ -213,6 +213,11 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           cursor: pointer;
           display: flex;
           flex-direction: column;
+        }
+
+        .keyword-node.selected {
+          background: #65f0a3;
+          border-color: #65f0a3;
         }
         
         .level-indicator {
@@ -228,7 +233,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         }
         
         .node-content {
-          padding: 16px;
+          padding: 12px 20px;
           flex: 1;
           display: flex;
           align-items: center;
@@ -239,9 +244,17 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         .content-text {
           text-align: center;
           font-size: 14px;
-          line-height: 1.4;
-          color: #ffffff;
+          line-height: 1.2;
+          color: #333333;
           word-break: break-word;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 200px;
+        }
+
+        .keyword-node.selected .content-text {
+          color: #ffffff;
         }
         
         .loading-overlay {
