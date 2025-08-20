@@ -632,8 +632,8 @@ export const useCanvasStore = create<CanvasStore>()(
                   level: 1, // L1层级
                   parentId: nodeId, // 使用实际的原始节点ID
                   type: 'keyword' as const,
-                  canExpand: childData.hasChildren,
-                  hasChildren: childData.hasChildren,
+                  canExpand: true, // L1节点总是可以展开到L2
+                  hasChildren: true,
                   isGenerating: false,
                   isSelected: false,
                 } as KeywordNodeData,
@@ -707,8 +707,8 @@ export const useCanvasStore = create<CanvasStore>()(
               level: childLevel,
               parentId: nodeId,
               type: 'keyword' as const,
-              canExpand: childData.hasChildren,
-              hasChildren: childData.hasChildren,
+              canExpand: childLevel < 6, // 最多6个层级，L6不能再展开
+              hasChildren: childLevel < 6,
               isGenerating: false,
               isSelected: false,
             } as KeywordNodeData,

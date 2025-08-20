@@ -19,21 +19,39 @@ const SelectedNodeButton: React.FC<SelectedNodeButtonProps> = ({ viewport }) => 
   const offsetX = viewport?.x || 0;
   const offsetY = viewport?.y || 0;
 
-  // 获取当前选中的节点
+  // 获取当前选中的节点（优先返回最高层级的选中节点）
   const getSelectedNode = () => {
-    for (const [level, nodeId] of Object.entries(selectedNodesByLevel)) {
-      if (nodeId) {
-        const node = nodes.find(n => n.id === nodeId);
-        if (node && node.data.canExpand) {
-          return node;
-        }
+    console.log('🔍 SelectedNodeButton - selectedNodesByLevel:', selectedNodesByLevel);
+    console.log('🔍 SelectedNodeButton - nodes count:', nodes.length);
+
+    // 按层级从高到低排序，优先处理最高层级的选中节点
+    const sortedLevels = Object.entries(selectedNodesByLevel)
+      .filter(([, nodeId]) => nodeId) // 过滤掉空的选择
+      .sort(([levelA], [levelB]) => parseInt(levelB) - parseInt(levelA)); // 从高到低排序
+
+    console.log('🔍 Sorted levels:', sortedLevels);
+
+    for (const [level, nodeId] of sortedLevels) {
+      const node = nodes.find(n => n.id === nodeId);
+      console.log(`🔍 Level ${level}, NodeId: ${nodeId}, Found node:`, node);
+      if (node) {
+        console.log(`🔍 Node data:`, node.data);
+        console.log(`🔍 canExpand: ${node.data.canExpand}, level: ${node.data.level}`);
+      }
+      if (node && node.data.canExpand) {
+        console.log('✅ Selected node found:', node);
+        return node;
       }
     }
+    console.log('❌ No selected expandable node found');
     return null;
   };
 
   const selectedNode = getSelectedNode();
-  
+
+  console.log('🎯 SelectedNodeButton render - selectedNode:', selectedNode);
+  console.log('🎯 SelectedNodeButton render - loading.isGenerating:', loading.isGenerating);
+
   if (!selectedNode || loading.isGenerating) {
     return null;
   }
