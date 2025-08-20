@@ -147,6 +147,9 @@ interface CanvasStore {
   originalPrompt: string;
   isAIGenerating: boolean;
 
+  // 节点选择状态
+  selectedNodesByLevel: Record<number, string | null>; // 每个层级只能选中一个节点
+
   // 版本管理
   snapshots: Snapshot[];
   currentSnapshotId: string | null;
@@ -173,6 +176,11 @@ interface CanvasStore {
   // 路径选择
   selectPath: (nodeIds: string[]) => void;
   clearSelection: () => void;
+
+  // 节点选择
+  selectNode: (nodeId: string, level: number) => void;
+  clearNodeSelection: (level?: number) => void;
+  isNodeSelected: (nodeId: string) => boolean;
 
   // AI层级管理
   analyzeUserInput: (userInput: string) => Promise<string>;
@@ -247,6 +255,9 @@ export const useCanvasStore = create<CanvasStore>()(
     originalPrompt: '',
     isAIGenerating: false,
 
+    // 节点选择状态
+    selectedNodesByLevel: {},
+
     snapshots: [],
     currentSnapshotId: null,
     loading: defaultLoadingState,
@@ -306,6 +317,27 @@ export const useCanvasStore = create<CanvasStore>()(
       state.selectedPath = null;
     }),
 
+    // 节点选择管理
+    selectNode: (nodeId, level) => set((state) => {
+      // 清除该层级之前的选择
+      state.selectedNodesByLevel[level] = nodeId;
+    }),
+
+    clearNodeSelection: (level) => set((state) => {
+      if (level !== undefined) {
+        // 清除指定层级的选择
+        delete state.selectedNodesByLevel[level];
+      } else {
+        // 清除所有选择
+        state.selectedNodesByLevel = {};
+      }
+    }),
+
+    isNodeSelected: (nodeId) => {
+      const state = get();
+      return Object.values(state.selectedNodesByLevel).includes(nodeId);
+    },
+
     // AI层级管理
     analyzeUserInput: async (userInput: string) => {
       console.log('🏪 Store analyzeUserInput called with:', userInput);
@@ -335,14 +367,14 @@ export const useCanvasStore = create<CanvasStore>()(
           }));
 
           state.currentLevel = 1;
+
+          // 设置原始提示
+          state.originalPrompt = analysisResult.originalPrompt;
         });
 
-        // 只清空现有节点，不自动创建初始节点
-        set((state) => {
-          // 清空现有节点
-          state.nodes = [];
-          state.edges = [];
-        });
+        // 初始化画布，创建节点
+        console.log('🚀 Calling generateInitialNodes...');
+        useCanvasStore.getState().generateInitialNodes(analysisResult);
 
         return generateChatBotResponse(analysisResult.levelCount);
 
@@ -502,65 +534,15 @@ export const useCanvasStore = create<CanvasStore>()(
       state.nodes = [];
       state.edges = [];
 
-      // 创建原始节点（如果有原始提示）
+      // 不创建原始节点在React Flow中，使用独立组件
       const originalPrompt = state.originalPrompt;
       const nodes: CanvasNode[] = [];
 
-      if (originalPrompt) {
-        const originalNode = {
-          id: `original-${Date.now()}`,
-          type: 'original' as const,
-          position: { x: 50, y: 100 },
-          data: {
-            id: `original-${Date.now()}`,
-            content: originalPrompt,
-            level: 0,
-            type: 'original' as const,
-            originalPrompt: originalPrompt,
-            isRoot: true as const,
-            isGenerating: false,
-            isSelected: false,
-          },
-        };
-        nodes.push(originalNode);
-      }
+      console.log('🎯 Original prompt for independent component:', originalPrompt);
 
-      // 生成初始关键词节点
-      const keywordNodes = analysisResult.initialNodes.map((nodeData: {
-        content: string;
-        level: number;
-        hasChildren: boolean;
-      }, index: number) => ({
-        id: `node-${Date.now()}-${index}`,
-        type: 'keyword' as const,
-        position: { x: (originalPrompt ? 320 : 50) + index * 250, y: 100 },
-        data: {
-          id: `node-${Date.now()}-${index}`,
-          content: nodeData.content,
-          level: nodeData.level,
-          type: 'keyword' as const,
-          canExpand: nodeData.hasChildren,
-          hasChildren: nodeData.hasChildren,
-          isGenerating: false,
-          isSelected: false,
-        } as KeywordNodeData,
-        style: {
-          backgroundColor: getNodeBackgroundColor(nodeData.level),
-        }
-      }));
-
-      nodes.push(...keywordNodes);
-      state.nodes = nodes;
-
-      // 创建从原始节点到第一个关键词节点的连接
-      if (originalPrompt && keywordNodes.length > 0) {
-        state.edges = [{
-          id: `edge-original-${keywordNodes[0].id}`,
-          source: nodes[0].id, // 原始节点
-          target: keywordNodes[0].id,
-          type: 'default',
-        }];
-      }
+      // 不自动生成初始节点，等待用户点击"生成下一层级"
+      state.nodes = nodes; // 只设置空的nodes数组
+      state.edges = []; // 清空edges
     }),
 
     // AI 生成相关 (占位符实现)
@@ -576,7 +558,8 @@ export const useCanvasStore = create<CanvasStore>()(
 
       try {
         // 特殊处理原始节点的生成
-        if (nodeId === 'original-node') {
+        const isOriginalNode = nodeId === 'original-node' || nodeId.startsWith('original-') || nodeId === 'original-independent-node';
+        if (isOriginalNode) {
           console.log('🎯 Generating children for original node');
 
           // 为原始节点生成L1层级的3个选项
@@ -588,6 +571,8 @@ export const useCanvasStore = create<CanvasStore>()(
           );
 
           console.log('📊 Analysis result:', expansionResult);
+          console.log('📊 Children count:', expansionResult.children?.length);
+          console.log('📊 Children data:', expansionResult.children);
 
           set((state) => {
             console.log('🔄 Before adding nodes, current nodes count:', state.nodes.length);
@@ -614,7 +599,7 @@ export const useCanvasStore = create<CanvasStore>()(
                   id: `l1-node-${Date.now()}-${index}`,
                   content: childData.content,
                   level: 1, // L1层级
-                  parentId: 'original-node',
+                  parentId: nodeId, // 使用实际的原始节点ID
                   type: 'keyword' as const,
                   canExpand: childData.hasChildren,
                   hasChildren: childData.hasChildren,
@@ -629,9 +614,10 @@ export const useCanvasStore = create<CanvasStore>()(
               return newNode;
             });
 
-            // 添加子节点到画布
+            // 暂时不创建连接线，先确保节点正确
             state.nodes.push(...childNodes);
             console.log('✅ After adding nodes, current nodes count:', state.nodes.length);
+            console.log('📊 Child nodes data:', childNodes);
 
             // 更新L1层级的节点数量
             const l1Level = state.levels.find(l => l.level === 1);
@@ -852,6 +838,9 @@ export const useCanvasStore = create<CanvasStore>()(
       state.currentLevel = 1;
       state.originalPrompt = '';
       state.isAIGenerating = false;
+
+      // 重置节点选择状态
+      state.selectedNodesByLevel = {};
 
       state.loading = defaultLoadingState;
       state.error = null;

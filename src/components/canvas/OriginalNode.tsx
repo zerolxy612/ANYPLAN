@@ -26,8 +26,10 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
     if (loading.isGenerating) return;
 
     try {
-      // 创建一个虚拟的原始节点ID用于生成
-      const originalNodeId = 'original-node';
+      // 使用固定的原始节点ID，因为它是独立组件
+      const originalNodeId = 'original-independent-node';
+
+      console.log('🎯 Using independent original node ID:', originalNodeId);
 
       // 调用生成子节点功能
       await generateChildren(originalNodeId, {

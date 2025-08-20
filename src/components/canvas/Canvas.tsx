@@ -57,6 +57,10 @@ function CanvasComponent({ className }: CanvasProps) {
 
   } = useCanvasStore();
 
+  // 调试日志
+  console.log('🔍 Canvas render - nodes:', nodes.length, nodes);
+  console.log('🔍 Canvas render - edges:', edges.length, edges);
+
   const {
     fitView,
     addNode,

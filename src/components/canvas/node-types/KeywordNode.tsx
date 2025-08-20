@@ -13,12 +13,21 @@ interface KeywordNodeProps extends NodeProps {
 const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const [, setIsHovered] = useState(false);
   const [showActions, setShowActions] = useState(false);
-  const [isSelected, setIsSelected] = useState(false);
-  const { generateChildren, renewNode, deleteNode, loading, viewport } = useCanvasStore();
+  const {
+    generateChildren,
+    renewNode,
+    deleteNode,
+    loading,
+    viewport,
+    selectNode,
+    clearNodeSelection,
+    isNodeSelected
+  } = useCanvasStore();
 
   const levelColor = getLevelColor(data.level);
   const isGenerating = loading.isGenerating;
   const isRenewing = loading.renewingNodeId === data.id;
+  const nodeSelected = isNodeSelected(data.id);
 
   // 计算"生成下一层级"按钮的位置（位于当前层级和下一层级的分界线上）
   const calculateNextLevelButtonPosition = () => {
@@ -67,17 +76,27 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const handleDeleteNode = () => {
     deleteNode(data.id);
   };
+
+  const handleNodeClick = () => {
+    if (nodeSelected) {
+      // 如果已选中，则取消选择
+      clearNodeSelection(data.level);
+    } else {
+      // 选择当前节点（会自动清除同层级其他选择）
+      selectNode(data.id, data.level);
+    }
+  };
   
   return (
     <div
-      className={`keyword-node ${selected || isSelected ? 'selected' : ''}`}
+      className={`keyword-node ${selected || nodeSelected ? 'selected' : ''}`}
       style={{
-        borderColor: (selected || isSelected) ? '#65f0a3' : '#404040',
-        borderWidth: (selected || isSelected) ? '2px' : '1px',
-        backgroundColor: (selected || isSelected) ? '#65f0a3' : levelColor,
-        boxShadow: (selected || isSelected) ? `0 0 0 2px #65f0a320` : '0 1px 3px rgba(0, 0, 0, 0.3)',
+        borderColor: (selected || nodeSelected) ? '#65f0a3' : '#404040',
+        borderWidth: (selected || nodeSelected) ? '2px' : '1px',
+        backgroundColor: (selected || nodeSelected) ? '#65f0a3' : levelColor,
+        boxShadow: (selected || nodeSelected) ? `0 0 0 2px #65f0a320` : '0 1px 3px rgba(0, 0, 0, 0.3)',
       }}
-      onClick={() => setIsSelected(!isSelected)}
+      onClick={handleNodeClick}
       onMouseEnter={() => {
         setIsHovered(true);
         setShowActions(true);
@@ -159,7 +178,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
 
 
       {/* 生成下一层级按钮 */}
-      {isSelected && data.canExpand && !isGenerating && !isRenewing && (
+      {nodeSelected && data.canExpand && !isGenerating && !isRenewing && (
         <button
           style={{
             position: 'fixed',
@@ -245,7 +264,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           text-align: center;
           font-size: 14px;
           line-height: 1.2;
-          color: #333333;
+          color: #d9d9d9;
           word-break: break-word;
           white-space: nowrap;
           overflow: hidden;
@@ -254,7 +273,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         }
 
         .keyword-node.selected .content-text {
-          color: #ffffff;
+          color: #000000;
         }
         
         .loading-overlay {
