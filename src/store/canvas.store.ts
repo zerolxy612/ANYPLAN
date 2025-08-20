@@ -640,8 +640,10 @@ export const useCanvasStore = create<CanvasStore>()(
               return newNode;
             });
 
-            // 暂时不创建连接线，先确保节点正确
+            // 不创建React Flow连接线，只使用按钮连线
             state.nodes.push(...childNodes);
+            // 确保没有边
+            state.edges = [];
             console.log('✅ After adding nodes, current nodes count:', state.nodes.length);
             console.log('📊 Child nodes data:', childNodes);
 
@@ -713,15 +715,17 @@ export const useCanvasStore = create<CanvasStore>()(
           // 添加子节点到画布
           state.nodes.push(...childNodes);
 
-          // 创建连接边
-          const childEdges = childNodes.map((childNode: CanvasNode) => ({
-            id: `edge-${nodeId}-${childNode.id}`,
-            source: nodeId,
-            target: childNode.id,
-            type: 'default' as const,
-          }));
+          // 确保没有React Flow边，只使用按钮连线
+          state.edges = [];
 
-          state.edges.push(...childEdges);
+          // 不创建React Flow的连接边，只使用按钮连线
+          // const childEdges = childNodes.map((childNode: CanvasNode) => ({
+          //   id: `edge-${nodeId}-${childNode.id}`,
+          //   source: nodeId,
+          //   target: childNode.id,
+          //   type: 'default' as const,
+          // }));
+          // state.edges.push(...childEdges);
 
           // 更新层级节点数量
           const levelIndex = state.levels.findIndex(l => l.level === childLevel);

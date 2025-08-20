@@ -1,7 +1,7 @@
 'use client';
 
 import React, { memo, useState } from 'react';
-import { Handle, Position, NodeProps } from '@xyflow/react';
+import { NodeProps } from '@xyflow/react';
 import { KeywordNodeData } from '@/types/canvas';
 import { useCanvasStore } from '@/store/canvas.store';
 import { getLevelColor } from '@/lib/canvas/utils';
@@ -108,22 +108,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
       
 
       
-      {/* 连接点 */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="node-handle node-handle-target"
-        style={{ backgroundColor: levelColor }}
-      />
-      
-      {data.canExpand && (
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          className="node-handle node-handle-source"
-          style={{ backgroundColor: levelColor }}
-        />
-      )}
+
 
 
 

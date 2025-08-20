@@ -20,6 +20,7 @@ import DefaultEdge from './edges/DefaultEdge';
 import LevelBar from './LevelBar';
 import OriginalNodeComponent from './OriginalNode';
 import SelectedNodeButton from './SelectedNodeButton';
+import ButtonToNodeConnections from './ButtonToNodeConnections';
 
 
 // 节点类型映射
@@ -324,6 +325,9 @@ function CanvasComponent({ className }: CanvasProps) {
           viewport={viewport}
         />
       )}
+
+      {/* 按钮到节点的连线 */}
+      <ButtonToNodeConnections viewport={viewport} />
 
       {/* 选中节点的生成按钮 */}
       <SelectedNodeButton viewport={viewport} />
