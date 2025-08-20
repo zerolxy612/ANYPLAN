@@ -338,7 +338,7 @@ export const useCanvasStore = create<CanvasStore>()(
           }, index: number) => ({
             id: `node-${Date.now()}-${index}`,
             type: 'keyword' as const,
-            position: { x: 450 + index * 250, y: 100 }, // 从原始节点右侧开始
+            position: { x: 320 + index * 250, y: 100 }, // 更靠近原始节点和生成按钮
             data: {
               id: `node-${Date.now()}-${index}`,
               content: nodeData.content,
@@ -557,7 +557,7 @@ export const useCanvasStore = create<CanvasStore>()(
       }, index: number) => ({
         id: `node-${Date.now()}-${index}`,
         type: 'keyword' as const,
-        position: { x: (originalPrompt ? 450 : 50) + index * 250, y: 100 },
+        position: { x: (originalPrompt ? 320 : 50) + index * 250, y: 100 },
         data: {
           id: `node-${Date.now()}-${index}`,
           content: nodeData.content,

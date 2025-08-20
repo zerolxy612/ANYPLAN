@@ -19,11 +19,18 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
   const offsetX = viewport?.x || 0;
   const offsetY = viewport?.y || 0;
 
-  // 原始节点的固定位置 - 调整尺寸使其更紧凑
-  const nodeX = 50;
+  // L1区域分界线位置
+  const l1BoundaryX = 400;
+
+  // 生成下一层级按钮位置（固定在L1分界线上）
+  const nextButtonX = l1BoundaryX * zoom + offsetX;
+  const nextButtonY = 200 * zoom + offsetY + (60 * zoom) / 2 - 16;  // 与节点垂直居中对齐
+
+  // 原始节点位置（向右调整，使整体更协调）
+  const nodeX = 200;  // 向右移动，给重新生成按钮留出空间
   const nodeY = 200;
-  const nodeWidth = 200;  // 从300减少到200
-  const nodeHeight = 60;  // 从80减少到60
+  const nodeWidth = 160;  // 调整宽度，使整体更紧凑
+  const nodeHeight = 60;
 
   // 应用viewport变换
   const transformedX = nodeX * zoom + offsetX;
@@ -31,13 +38,9 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
   const transformedWidth = nodeWidth * zoom;
   const transformedHeight = nodeHeight * zoom;
 
-  // 重新生成按钮位置（节点左侧）- 调整位置和大小
-  const regenerateButtonX = transformedX - 50;  // 更靠近节点
-  const regenerateButtonY = transformedY + transformedHeight / 2 - 16;  // 调整垂直居中
-
-  // 生成下一层级按钮位置（节点右侧，在原始区域和L1区域边界上）
-  const nextButtonX = transformedX + transformedWidth + 30;  // 稍微远一点
-  const nextButtonY = transformedY + transformedHeight / 2 - 16;  // 调整垂直居中
+  // 重新生成按钮位置（节点左侧）
+  const regenerateButtonX = transformedX - 50;  // 节点左侧50px
+  const regenerateButtonY = transformedY + transformedHeight / 2 - 16;  // 垂直居中
 
   return (
     <div
