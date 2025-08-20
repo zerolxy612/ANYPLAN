@@ -21,13 +21,16 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     viewport,
     selectNode,
     clearNodeSelection,
-    isNodeSelected
+    isNodeSelected,
+    nodes
   } = useCanvasStore();
 
   const levelColor = getLevelColor(data.level);
   const isGenerating = loading.isGenerating;
   const isRenewing = loading.renewingNodeId === data.id;
   const nodeSelected = isNodeSelected(data.id);
+
+
 
 
   
@@ -103,42 +106,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         )}
       </div>
       
-      {/* 操作按钮 */}
-      {showActions && !isGenerating && !isRenewing && (
-        <div className="node-actions">
-          {data.canExpand && (
-            <button
-              className="action-btn generate-btn"
-              onClick={handleGenerateChildren}
-              title="生成子节点"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 5v14m-7-7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </button>
-          )}
-          
-          <button
-            className="action-btn renew-btn"
-            onClick={handleRenewNode}
-            title="重新生成"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M1 4v6h6m16 10v-6h-6M2.05 10.5a8 8 0 0 1 15.9-2.5M21.95 13.5a8 8 0 0 1-15.9 2.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          
-          <button
-            className="action-btn delete-btn"
-            onClick={handleDeleteNode}
-            title="删除节点"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        </div>
-      )}
+
       
       {/* 连接点 */}
       <Handle
@@ -161,10 +129,12 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
 
 
 
+
+
       <style jsx>{`
         .keyword-node {
-          min-width: 240px;
-          max-width: 240px;
+          min-width: 180px;
+          max-width: 180px;
           min-height: 50px;
           max-height: 50px;
           border-radius: 25px;
@@ -212,7 +182,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          max-width: 200px;
+          max-width: 140px;
         }
 
         .keyword-node.selected .content-text {

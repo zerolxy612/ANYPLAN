@@ -19,6 +19,7 @@ import KeywordNode from './node-types/KeywordNode';
 import DefaultEdge from './edges/DefaultEdge';
 import LevelBar from './LevelBar';
 import OriginalNodeComponent from './OriginalNode';
+import SelectedNodeButton from './SelectedNodeButton';
 
 
 // 节点类型映射
@@ -323,6 +324,9 @@ function CanvasComponent({ className }: CanvasProps) {
           viewport={viewport}
         />
       )}
+
+      {/* 选中节点的生成按钮 */}
+      <SelectedNodeButton viewport={viewport} />
 
       </div>
 

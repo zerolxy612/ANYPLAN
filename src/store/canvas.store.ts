@@ -618,7 +618,7 @@ export const useCanvasStore = create<CanvasStore>()(
                 id: `l1-node-${Date.now()}-${index}`,
                 type: 'keyword' as const,
                 position: {
-                  x: l1AreaX + l1AreaWidth / 2 - 100, // 在L1区域中心，节点宽度200px的一半
+                  x: l1AreaX + l1AreaWidth / 2 - 90, // 在L1区域中心，节点宽度180px的一半
                   y: canvasCenterY - 100 + index * 120 // 垂直排列，间距120px
                 },
                 data: {
@@ -691,7 +691,7 @@ export const useCanvasStore = create<CanvasStore>()(
             id: `${nodeId}-child-${Date.now()}-${index}`,
             type: 'keyword' as const,
             position: {
-              x: levelCenterX - 100, // 节点宽度200px的一半，在层级区域中心
+              x: levelCenterX - 90, // 节点宽度180px的一半，在层级区域中心
               y: yPositions[index] // 使用计算好的垂直位置
             },
             data: {
