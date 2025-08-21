@@ -368,7 +368,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         
         .content-text {
           text-align: left;
-          font-size: 14px;
+          font-size: 0.875rem; /* 14px */
           line-height: 1.4;
           color: #d9d9d9;
           word-break: break-word;
@@ -570,7 +570,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         .sibling-add-button {
           position: absolute;
           left: 50%;
-          top: -12px;
+          top: -28px;
           transform: translateX(-50%);
           width: 24px;
           height: 24px;
@@ -611,7 +611,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         .context-menu-item {
           padding: 8px 12px;
           color: #ffffff;
-          font-size: 14px;
+          font-size: 0.875rem; /* 14px */
           cursor: pointer;
           transition: background-color 0.2s ease;
           display: flex;
@@ -661,7 +661,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           border-radius: 4px;
           padding: 4px 8px;
           color: #fff;
-          font-size: 14px;
+          font-size: 0.875rem; /* 14px */
           outline: none;
         }
 
