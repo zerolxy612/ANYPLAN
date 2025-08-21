@@ -61,6 +61,9 @@ function CanvasComponent({ className }: CanvasProps) {
 
   } = useCanvasStore();
 
+  // 检查是否已经生成了L1节点 - 如果有L1节点，则禁用层级操作
+  const hasL1Nodes = nodes.some(node => node.data.level === 1);
+
   // 调试日志
   console.log('🔍 Canvas render - nodes:', nodes.length, nodes);
   console.log('🔍 Canvas render - edges:', edges.length, edges);
@@ -187,10 +190,10 @@ function CanvasComponent({ className }: CanvasProps) {
             const level = parseInt(levelId.replace('L', ''));
             setCurrentLevel(level);
           }}
-          onAddLevel={(afterLevel) => {
+          onAddLevel={hasL1Nodes ? undefined : (afterLevel) => {
             insertLevel(afterLevel);
           }}
-          onDeleteLevel={(level) => {
+          onDeleteLevel={hasL1Nodes ? undefined : (level) => {
             deleteLevel(level);
           }}
           onEditLevel={(level, newDescription) => {

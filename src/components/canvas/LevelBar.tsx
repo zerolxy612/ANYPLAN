@@ -440,7 +440,8 @@ const LevelBar: React.FC<LevelBarProps> = ({
           );
 
           // 添加层级间的"+"按钮（在当前层级后面，但不包括最后一个层级）
-          if (index < levels.length - 1 && levels.length < 6) {
+          // 只有在onAddLevel回调存在时才显示（即未禁用时）
+          if (index < levels.length - 1 && levels.length < 6 && onAddLevel) {
             // 计算下一个层级的位置
             const nextLevel = levels[index + 1];
             const nextCanvasLevelX = 400 + (nextLevel.level - 1) * 300;
@@ -501,7 +502,8 @@ const LevelBar: React.FC<LevelBarProps> = ({
         })}
 
         {/* 添加层级按钮 - 位于最后一个层级的右侧 */}
-        {levels.length < 6 && levels.length > 0 && (() => {
+        {/* 只有在onAddLevel回调存在时才显示（即未禁用时） */}
+        {levels.length < 6 && levels.length > 0 && onAddLevel && (() => {
           const lastLevel = levels[levels.length - 1];
           const lastCanvasLevelX = 400 + (lastLevel.level - 1) * 300;
           const lastCanvasLevelWidth = 300;
@@ -650,28 +652,29 @@ const LevelBar: React.FC<LevelBarProps> = ({
         >
           <button
             onClick={handleDeleteLevel}
-            disabled={levels.length <= 1}
+            disabled={levels.length <= 1 || !onDeleteLevel}
             style={{
               width: '100%',
               padding: '8px 16px',
               backgroundColor: 'transparent',
               border: 'none',
-              color: levels.length <= 1 ? '#666666' : '#ffffff',
-              cursor: levels.length <= 1 ? 'not-allowed' : 'pointer',
+              color: (levels.length <= 1 || !onDeleteLevel) ? '#666666' : '#ffffff',
+              cursor: (levels.length <= 1 || !onDeleteLevel) ? 'not-allowed' : 'pointer',
               textAlign: 'left',
               fontSize: '14px',
               transition: 'background-color 0.2s ease'
             }}
             onMouseEnter={(e) => {
-              if (levels.length > 1) {
+              if (levels.length > 1 && onDeleteLevel) {
                 e.currentTarget.style.backgroundColor = '#404040';
               }
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
+            title={!onDeleteLevel ? '已生成节点后无法删除层级' : levels.length <= 1 ? '至少需要保留一个层级' : '删除此层级'}
           >
-            删除
+            {!onDeleteLevel ? '删除 (已禁用)' : '删除'}
           </button>
         </div>
       )}

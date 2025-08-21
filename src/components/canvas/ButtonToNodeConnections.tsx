@@ -10,7 +10,6 @@ interface ButtonToNodeConnectionsProps {
 const ButtonToNodeConnections: React.FC<ButtonToNodeConnectionsProps> = ({ viewport }) => {
   const {
     nodes,
-    selectedNodesByLevel,
     levels,
     originalPrompt
   } = useCanvasStore();
@@ -19,45 +18,12 @@ const ButtonToNodeConnections: React.FC<ButtonToNodeConnectionsProps> = ({ viewp
   const offsetX = viewport?.x || 0;
   const offsetY = viewport?.y || 0;
 
-  // 获取当前选中的节点
-  const getSelectedNode = () => {
-    for (const [level, nodeId] of Object.entries(selectedNodesByLevel)) {
-      if (nodeId) {
-        const node = nodes.find(n => n.id === nodeId);
-        if (node && node.data.canExpand) {
-          return node;
-        }
-      }
-    }
-    return null;
-  };
-
-  const selectedNode = getSelectedNode();
+  // 不再需要获取选中节点，因为我们要显示所有连线
 
   // 收集所有需要绘制连线的情况
   const connections = [];
 
-  // 1. 处理选中节点的连线
-  if (selectedNode) {
-    const childNodes = nodes.filter(n => n.data.parentId === selectedNode.id);
-
-    if (childNodes.length > 0) {
-      const nextLevelBoundaryX = 400 + selectedNode.data.level * 300;
-      const nodeCanvasY = selectedNode.position.y;
-
-      const buttonX = nextLevelBoundaryX * zoom + offsetX;
-      const buttonY = nodeCanvasY * zoom + offsetY + 5;
-
-      connections.push({
-        buttonX,
-        buttonY,
-        childNodes,
-        type: 'selected'
-      });
-    }
-  }
-
-  // 2. 处理原始节点的连线
+  // 1. 处理原始节点的连线（原始节点 → L1节点）
   if (levels.length > 0 && originalPrompt) {
     // 获取L1节点（原始节点的子节点）
     const l1Nodes = nodes.filter(n => n.data.level === 1);
@@ -67,16 +33,60 @@ const ButtonToNodeConnections: React.FC<ButtonToNodeConnectionsProps> = ({ viewp
       const l1BoundaryX = 400;
       const canvasCenterY = 300;
 
-      const originalButtonX = l1BoundaryX * zoom + offsetX;
-      const originalButtonY = canvasCenterY * zoom + offsetY + 5;
+      const originalButtonX = l1BoundaryX * zoom + offsetX - 16;
+      const originalButtonY = canvasCenterY * zoom + offsetY - 16;
 
       connections.push({
         buttonX: originalButtonX,
         buttonY: originalButtonY,
         childNodes: l1Nodes,
-        type: 'original'
+        type: 'original',
+        parentLevel: 0
       });
     }
+  }
+
+  // 2. 处理所有层级节点的连线（L1 → L2, L2 → L3, 等等）
+  // 按层级分组所有节点
+  const nodesByLevel = new Map();
+  nodes.forEach(node => {
+    const level = node.data.level;
+    if (!nodesByLevel.has(level)) {
+      nodesByLevel.set(level, []);
+    }
+    nodesByLevel.get(level).push(node);
+  });
+
+  // 为每个有子节点的节点创建连线
+  nodes.forEach(parentNode => {
+    // 查找该节点的子节点
+    const childNodes = nodes.filter(n => n.data.parentId === parentNode.id);
+
+    if (childNodes.length > 0) {
+      // 计算"生成下一层级"按钮的位置
+      const nextLevelBoundaryX = 400 + parentNode.data.level * 300;
+      const nodeCanvasY = parentNode.position.y;
+
+      const buttonX = nextLevelBoundaryX * zoom + offsetX - 16;
+      const buttonY = nodeCanvasY * zoom + offsetY + 5;
+
+      connections.push({
+        buttonX,
+        buttonY,
+        childNodes,
+        type: 'node',
+        parentLevel: parentNode.data.level,
+        parentNode
+      });
+    }
+  });
+
+  // 调试信息（开发环境）
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔗 ButtonToNodeConnections - connections:', connections.length);
+    connections.forEach((conn, index) => {
+      console.log(`🔗 Connection ${index}: type=${conn.type}, parentLevel=${conn.parentLevel}, childNodes=${conn.childNodes.length}`);
+    });
   }
 
   if (connections.length === 0) {
@@ -106,7 +116,7 @@ const ButtonToNodeConnections: React.FC<ButtonToNodeConnectionsProps> = ({ viewp
         }}
       >
         {connections.map((connection) =>
-          connection.childNodes.map((childNode, index) => {
+          connection.childNodes.map((childNode, childIndex) => {
             // 计算子节点位置（节点左边缘中心）
             const childX = childNode.position.x * zoom + offsetX; // 节点左边缘
             const childY = childNode.position.y * zoom + offsetY + 25; // 节点垂直中心
@@ -115,25 +125,31 @@ const ButtonToNodeConnections: React.FC<ButtonToNodeConnectionsProps> = ({ viewp
             const controlX1 = connection.buttonX + 50; // 按钮右侧控制点
             const controlX2 = childX - 50;  // 节点左侧控制点
 
+            // 根据连线类型设置不同的样式
+            const strokeColor = connection.type === 'original' ? '#606060' : '#2a2a2b';
+            const strokeWidth = connection.type === 'original' ? '2' : '2';
+            const opacity = connection.type === 'original' ? '0.6' : '0.8';
+
             return (
-              <g key={`connection-${connection.type}-${childNode.id}`}>
+              <g key={`connection-${connection.type}-${connection.parentLevel}-${childNode.id}`}>
                 {/* 主连线：从按钮到子节点的贝塞尔曲线 */}
                 <path
-                  d={`M ${connection.buttonX} ${connection.buttonY} C ${controlX1} ${connection.buttonY}, ${controlX2} ${childY}, ${childX} ${childY}`}
-                  stroke="#2a2a2b"
-                  strokeWidth="2"
+                  d={`M ${connection.buttonX + 16} ${connection.buttonY + 16} C ${controlX1} ${connection.buttonY + 16}, ${controlX2} ${childY}, ${childX} ${childY}`}
+                  stroke={strokeColor}
+                  strokeWidth={strokeWidth}
                   fill="none"
-                  opacity="0.8"
+                  opacity={opacity}
+                  strokeDasharray={connection.type === 'original' ? '5,5' : 'none'}
                 />
 
                 {/* 连接点：按钮处的小圆点（每个连接组只显示一次） */}
-                {index === 0 && (
+                {childIndex === 0 && (
                   <circle
-                    cx={connection.buttonX}
-                    cy={connection.buttonY}
+                    cx={connection.buttonX + 16}
+                    cy={connection.buttonY + 16}
                     r="3"
-                    fill="#2a2a2b"
-                    opacity="0.8"
+                    fill={strokeColor}
+                    opacity={opacity}
                   />
                 )}
 
@@ -142,8 +158,8 @@ const ButtonToNodeConnections: React.FC<ButtonToNodeConnectionsProps> = ({ viewp
                   cx={childX}
                   cy={childY}
                   r="3"
-                  fill="#2a2a2b"
-                  opacity="0.8"
+                  fill={strokeColor}
+                  opacity={opacity}
                 />
               </g>
             );
