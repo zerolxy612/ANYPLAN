@@ -1,8 +1,52 @@
 'use client';
 
 import React from 'react';
-import KeywordNode from '@/components/canvas/node-types/KeywordNode';
 import { KeywordNodeData } from '@/types/canvas';
+
+// 创建一个简化的测试组件，不依赖于完整的 React Flow NodeProps
+const TestKeywordNode = ({ data, selected }: { data: KeywordNodeData; selected: boolean }) => {
+  return (
+    <div
+      style={{
+        width: '180px',
+        minHeight: '50px',
+        maxHeight: '150px',
+        borderRadius: '25px',
+        border: selected ? '2px solid #65f0a3' : '1px solid #404040',
+        backgroundColor: selected ? '#65f0a3' : '#262627',
+        padding: '12px 20px',
+        color: selected ? '#000000' : '#d9d9d9',
+        fontSize: '14px',
+        lineHeight: '1.4',
+        wordBreak: 'break-word',
+        position: 'relative',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+      }}
+    >
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        {data.content}
+      </div>
+      {data.content.length > 30 && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '50px',
+            background: selected
+              ? 'linear-gradient(to bottom, transparent 0%, rgba(101, 240, 163, 0.3) 30%, rgba(101, 240, 163, 0.8) 70%, #65f0a3 100%)'
+              : 'linear-gradient(to bottom, transparent 0%, rgba(38, 38, 39, 0.3) 30%, rgba(38, 38, 39, 0.8) 70%, #262627 100%)',
+            pointerEvents: 'none',
+            zIndex: 2,
+          }}
+        />
+      )}
+    </div>
+  );
+};
 
 const TestTextFadePage = () => {
   // 创建测试节点数据
@@ -65,27 +109,27 @@ const TestTextFadePage = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', alignItems: 'center' }}>
         <div>
           <h3 style={{ color: '#ccc', marginBottom: '10px' }}>短文本（不应显示渐变效果）</h3>
-          <KeywordNode data={shortTextNode} selected={false} />
+          <TestKeywordNode data={shortTextNode} selected={false} />
         </div>
 
         <div>
           <h3 style={{ color: '#ccc', marginBottom: '10px' }}>中等文本（可能显示渐变效果）</h3>
-          <KeywordNode data={mediumTextNode} selected={false} />
+          <TestKeywordNode data={mediumTextNode} selected={false} />
         </div>
 
         <div>
           <h3 style={{ color: '#ccc', marginBottom: '10px' }}>长文本（应显示渐变效果）</h3>
-          <KeywordNode data={longTextNode} selected={false} />
+          <TestKeywordNode data={longTextNode} selected={false} />
         </div>
 
         <div>
           <h3 style={{ color: '#ccc', marginBottom: '10px' }}>超长文本（应显示渐变效果）</h3>
-          <KeywordNode data={veryLongTextNode} selected={false} />
+          <TestKeywordNode data={veryLongTextNode} selected={false} />
         </div>
 
         <div>
           <h3 style={{ color: '#ccc', marginBottom: '10px' }}>选中状态的长文本</h3>
-          <KeywordNode data={longTextNode} selected={true} />
+          <TestKeywordNode data={longTextNode} selected={true} />
         </div>
       </div>
 

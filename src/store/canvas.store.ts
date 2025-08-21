@@ -922,7 +922,7 @@ export const useCanvasStore = create<CanvasStore>()(
             const canvasCenterY = 300; // 画布垂直居中
 
             // 使用智能布局计算L1节点位置
-            const childContents = expansionResult.children.map((child: any) => child.content);
+            const childContents = expansionResult.children.map((child: { content: string; level: number; hasChildren: boolean }) => child.content);
             const expandedStates = expansionResult.children.map(() => false); // 默认都是收缩状态
             const yPositions = calculateChildVerticalPositions(
               canvasCenterY,
@@ -1007,7 +1007,7 @@ export const useCanvasStore = create<CanvasStore>()(
           const levelCenterX = levelAreaX + 150; // 层级区域中心
 
           // 提取子节点内容和默认展开状态
-          const childContents = expansionResult.children.map((child: any) => child.content);
+          const childContents = expansionResult.children.map((child: { content: string; level: number; hasChildren: boolean }) => child.content);
           const expandedStates = expansionResult.children.map(() => false); // 默认都是收缩状态
 
           const yPositions = calculateChildVerticalPositions(
