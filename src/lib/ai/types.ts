@@ -43,6 +43,7 @@ export interface GeminiCandidate {
 // AI分析请求
 export interface AnalysisRequest {
   userInput: string;
+  existingLevels?: Array<{level: number, description: string}>; // 现有层级信息，用于避免重复
   context?: {
     previousLevels?: number;
     existingNodes?: string[];

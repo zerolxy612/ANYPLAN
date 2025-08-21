@@ -18,9 +18,9 @@ import { NodeExpansionResult } from '@/lib/ai/types';
 import { geminiService } from '@/lib/ai/gemini';
 import { CHATBOT_RESPONSE_TEMPLATE } from '@/lib/ai/prompts';
 // AI 辅助函数 - 使用真实的 Gemini API
-const analyzeUserInput = async (userInput: string) => {
+const analyzeUserInput = async (userInput: string, existingLevels?: Array<{level: number, description: string}>) => {
   try {
-    const result = await geminiService.analyzeAndGenerateLevels({ userInput });
+    const result = await geminiService.analyzeAndGenerateLevels({ userInput, existingLevels });
     return {
       levelCount: result.levelCount,
       levels: result.levels.map(level => ({
@@ -200,26 +200,47 @@ const calculateChildVerticalPositions = (
   return positions;
 };
 
-// 生成新层级描述的简单函数
+// 生成新层级描述的智能函数
 const generateLevelDescription = async (newLevel: number, originalPrompt: string, existingLevels: AILevel[]): Promise<string> => {
-  // 简单的层级描述生成逻辑
+  try {
+    // 使用AI生成不重复的层级描述
+    const existingDescriptions = existingLevels.map(l => ({ level: l.level, description: l.description }));
+    const result = await geminiService.analyzeAndGenerateLevels({
+      userInput: originalPrompt,
+      existingLevels: existingDescriptions
+    });
+
+    // 找到对应层级的描述
+    const targetLevel = result.levels.find(l => l.level === newLevel);
+    if (targetLevel) {
+      return targetLevel.description;
+    }
+  } catch (error) {
+    console.error('AI level description generation failed:', error);
+  }
+
+  // 降级处理：使用智能默认描述
   const levelDescriptions = [
-    '表层探索', '具体原因', '深层机制', '解决方案', '实施策略', '效果评估'
+    '表层探索', '具体原因', '深层机制', '解决方案', '实施策略', '效果评估',
+    '综合分析', '行动计划', '效果监控', '持续改进'
   ];
 
-  // 如果有现有层级，尝试智能生成
-  if (existingLevels.length > 0) {
-    const beforeLevel = existingLevels.find(l => l.level === newLevel - 1);
-    const afterLevel = existingLevels.find(l => l.level === newLevel);
+  // 确保不与现有描述重复
+  const existingDescriptions = existingLevels.map(l => l.description);
+  let description = levelDescriptions[newLevel - 1] || `第${newLevel}层级`;
 
-    if (beforeLevel && afterLevel) {
-      // 在两个层级之间插入，生成过渡性描述
-      return `${beforeLevel.description}分析`;
+  // 如果重复，尝试其他描述
+  if (existingDescriptions.includes(description)) {
+    const alternatives = ['深入分析', '进阶探索', '系统思考', '策略制定', '方案优化'];
+    for (const alt of alternatives) {
+      if (!existingDescriptions.includes(alt)) {
+        description = alt;
+        break;
+      }
     }
   }
 
-  // 使用默认描述
-  return levelDescriptions[newLevel - 1] || `第${newLevel}层级`;
+  return description;
 };
 
 // 使用constants中的函数
@@ -311,6 +332,9 @@ interface CanvasStore {
   generateChildren: (nodeId: string, context: NodeContext) => Promise<void>;
   renewNode: (nodeId: string, context: NodeContext) => Promise<void>;
   generateInitialNodes: (analysisResult: AIAnalysisResult) => void;
+
+  // 同层级节点生成
+  generateSiblingNode: (nodeId: string, position: 'above' | 'below') => Promise<void>;
 
   // 报告生成
   generateReport: (userInput?: string) => Promise<string>;
@@ -415,8 +439,64 @@ export const useCanvasStore = create<CanvasStore>()(
     }),
 
     deleteNode: (nodeId) => set((state) => {
-      state.nodes = state.nodes.filter(n => n.id !== nodeId);
-      state.edges = state.edges.filter(e => e.source !== nodeId && e.target !== nodeId);
+      const nodeToDelete = state.nodes.find(n => n.id === nodeId);
+      if (!nodeToDelete) return;
+
+      // 递归删除所有子节点
+      const deleteNodeAndChildren = (id: string) => {
+        // 找到所有子节点
+        const childNodes = state.nodes.filter(n => n.data && n.data.parentId === id);
+
+        // 递归删除子节点
+        childNodes.forEach(child => {
+          deleteNodeAndChildren(child.id);
+        });
+
+        // 删除当前节点
+        state.nodes = state.nodes.filter(n => n.id !== id);
+
+        // 删除相关的边
+        state.edges = state.edges.filter(e => e.source !== id && e.target !== id);
+      };
+
+      // 开始递归删除
+      deleteNodeAndChildren(nodeId);
+
+      // 清除节点选择状态
+      if (nodeToDelete.data && nodeToDelete.data.level) {
+        const level = nodeToDelete.data.level;
+        if (state.selectedNodesByLevel[level] === nodeId) {
+          delete state.selectedNodesByLevel[level];
+        }
+      }
+
+      // 重新布局剩余的同层级节点
+      if (nodeToDelete.data && nodeToDelete.data.parentId) {
+        // 找到同层级的兄弟节点
+        const siblingNodes = state.nodes.filter(n =>
+          n.data &&
+          n.data.level === nodeToDelete.data.level &&
+          n.data.parentId === nodeToDelete.data.parentId
+        );
+
+        // 重新计算兄弟节点的位置
+        if (siblingNodes.length > 0) {
+          const parentNode = state.nodes.find(n => n.id === nodeToDelete.data.parentId);
+          if (parentNode) {
+            // 计算新的垂直位置
+            const yPositions = calculateChildVerticalPositions(siblingNodes.length, parentNode.position.y);
+
+            siblingNodes.forEach((node, index) => {
+              const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
+              if (nodeIndex !== -1) {
+                state.nodes[nodeIndex].position.y = yPositions[index];
+              }
+            });
+          }
+        }
+      }
+
+      console.log('🗑️ Node and its children deleted:', nodeId);
     }),
 
     // 边操作
@@ -688,7 +768,9 @@ export const useCanvasStore = create<CanvasStore>()(
 
       try {
         console.log('🔄 Calling local analyzeUserInput function...');
-        const analysisResult = await analyzeUserInput(userInput);
+        const state = get();
+        const existingLevels = state.levels.map(l => ({ level: l.level, description: l.description }));
+        const analysisResult = await analyzeUserInput(userInput, existingLevels);
         console.log('📊 Analysis result:', analysisResult);
 
         set((state) => {
@@ -1119,6 +1201,104 @@ export const useCanvasStore = create<CanvasStore>()(
       } finally {
         set((state) => {
           state.loading.renewingNodeId = null;
+        });
+      }
+    },
+
+    // 生成同层级节点
+    generateSiblingNode: async (nodeId: string, position: 'above' | 'below') => {
+      const state = get();
+      const targetNode = state.nodes.find(n => n.id === nodeId);
+
+      if (!targetNode || !targetNode.data) {
+        console.error('Target node not found:', nodeId);
+        return;
+      }
+
+      set((state) => {
+        state.isAIGenerating = true;
+      });
+
+      try {
+        // 获取同层级的兄弟节点内容
+        const siblingNodes = state.nodes.filter(n =>
+          n.data &&
+          n.data.level === targetNode.data.level &&
+          n.data.parentId === targetNode.data.parentId
+        );
+
+        const siblingContents = siblingNodes.map(n => n.data.content);
+
+        // 使用AI生成新的同层级内容
+        const expansionResult = await expandNodeContent(
+          targetNode.data.content,
+          targetNode.data.level - 1, // 传入父级层级
+          targetNode.data.parentId ?
+            state.nodes.find(n => n.id === targetNode.data.parentId)?.data?.content || '' :
+            state.originalPrompt,
+          state.originalPrompt
+        );
+
+        if (expansionResult.children && expansionResult.children.length > 0) {
+          // 选择第一个生成的内容作为新的同层级节点
+          const newContent = expansionResult.children[0];
+
+          // 计算新节点的位置
+          const targetPosition = targetNode.position;
+          const verticalOffset = position === 'above' ? -80 : 80;
+
+          const newNode = {
+            id: `${nodeId}-sibling-${Date.now()}`,
+            type: 'keyword' as const,
+            position: {
+              x: targetPosition.x,
+              y: targetPosition.y + verticalOffset
+            },
+            data: {
+              id: `${nodeId}-sibling-${Date.now()}`,
+              content: newContent.content,
+              level: targetNode.data.level,
+              parentId: targetNode.data.parentId,
+              type: 'keyword' as const,
+              canExpand: targetNode.data.canExpand,
+              hasChildren: false,
+              isGenerating: false,
+              isSelected: false,
+            } as KeywordNodeData,
+            style: {
+              backgroundColor: getNodeBackgroundColor(targetNode.data.level),
+            }
+          };
+
+          // 添加新节点和边
+          set((state) => {
+            // 添加新节点
+            state.nodes.push(newNode);
+
+            // 如果有父节点，添加连接边
+            if (targetNode.data.parentId) {
+              const newEdge = {
+                id: `edge-${targetNode.data.parentId}-${newNode.id}`,
+                source: targetNode.data.parentId,
+                target: newNode.id,
+                type: 'default' as const,
+                animated: false,
+                style: { stroke: '#65f0a3', strokeWidth: 2 }
+              };
+              state.edges.push(newEdge);
+            }
+          });
+
+          // 重新布局同层级节点
+          get().relayoutSiblingNodes(nodeId);
+
+          console.log('✅ Sibling node generated successfully');
+        }
+      } catch (error) {
+        console.error('Sibling node generation failed:', error);
+      } finally {
+        set((state) => {
+          state.isAIGenerating = false;
         });
       }
     },

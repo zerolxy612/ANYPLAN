@@ -1,20 +1,37 @@
 // AI Prompt模板
 
 // 分析用户问题并生成层级框架的Prompt
-export const ANALYZE_AND_GENERATE_LEVELS_PROMPT = (userInput: string) => `
+export const ANALYZE_AND_GENERATE_LEVELS_PROMPT = (userInput: string, existingLevels?: Array<{level: number, description: string}>) => {
+  const existingDescriptions = existingLevels?.map(l => l.description) || [];
+  const existingLevelsText = existingDescriptions.length > 0
+    ? `\n现有层级描述：${existingDescriptions.join('、')}\n请确保新生成的层级描述与现有描述不重复，且体现从浅到深的递进关系。\n`
+    : '';
+
+  return `
 基于心理疏导与个人成长的使用场景，分析用户输入的关键词或问题，生成层层递进的思维探索框架。
 
-用户输入：「${userInput}」
+用户输入：「${userInput}」${existingLevelsText}
 
 请根据心理疏导与个人成长的需求，智能判断需要多少个层级能帮助用户有一个大概的思路框架，并为每个层级设计4个字的标题。
 
+层级递进原则：
+- 从表象到本质：L1表面现象 → L2具体原因 → L3深层机制 → L4系统思考 → L5综合方案
+- 从简单到复杂：内容丰富度和深度逐层递增
+- 从认知到行动：理解问题 → 分析原因 → 探索本质 → 制定策略 → 实施方案
+
 层级内容要求：
-- L1: 词组或短句（5-10字）
-- L2: 深入细节的句子（15-30字）
-- L3: 更深入的内容（30-50字）
-- L4: 进一步深化（50-80字）
-- L5: 综合分析（80-120字）
-- L6: 完整方案（120-200字）
+- L1: 词组或短句（5-10字）- 问题的表面现象和直观感受
+- L2: 深入细节的句子（15-30字）- 具体的原因和影响因素
+- L3: 更深入的内容（30-50字）- 深层的心理机制和根本原因
+- L4: 进一步深化（50-80字）- 系统性的分析和多角度思考
+- L5: 综合分析（80-120字）- 综合性的解决方案和成长路径
+- L6: 完整方案（120-200字）- 详细的行动计划和长期发展
+
+层级描述命名规范：
+- 必须是4个字的中文词汇
+- 体现该层级的核心功能和探索重点
+- 与现有层级描述不重复
+- 按照递进关系排列：识别→分析→探索→策略→方案→实施
 
 请严格按照以下JSON格式返回：
 {
@@ -33,12 +50,14 @@ export const ANALYZE_AND_GENERATE_LEVELS_PROMPT = (userInput: string) => `
   ]
 }
 
-注意：
-- 层级描述必须是4个字
+重要约束：
+- 层级描述必须是4个字，不能重复现有描述
 - 专注于心理疏导与个人成长领域
 - 初始节点要提供多种选择，不要提问
+- 层级间要有明显的递进关系和逻辑连贯性
 - 确保JSON格式完全正确，不要包含任何其他文字
 `;
+};
 
 // 扩展节点内容的Prompt
 export const EXPAND_NODE_PROMPT = (nodeContent: string, nodeLevel: number, parentContext: string, userPrompt: string) => `

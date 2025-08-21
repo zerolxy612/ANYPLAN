@@ -12,8 +12,10 @@ interface KeywordNodeProps extends NodeProps {
 }
 
 const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
-  const [, setIsHovered] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const {
     generateChildren,
     renewNode,
@@ -25,7 +27,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     getHighlightedNodes,
     nodes,
     setNodeExpanded,
-    isNodeExpanded
+    isNodeExpanded,
+    generateSiblingNode
   } = useCanvasStore();
 
   // 使用 store 中的展开状态
@@ -84,10 +87,6 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
       });
     }
   };
-  
-  const handleDeleteNode = () => {
-    deleteNode(data.id);
-  };
 
   const handleNodeClick = (e: React.MouseEvent) => {
     // 防止事件冒泡
@@ -110,6 +109,47 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     // 双击展开/收缩节点
     setNodeExpanded(data.id, !isExpanded);
   };
+
+  // 生成同层级节点
+  const handleGenerateSibling = async (position: 'above' | 'below') => {
+    if (!isGenerating) {
+      await generateSiblingNode(data.id, position);
+    }
+  };
+
+  // 右键菜单处理
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setContextMenuPosition({ x: e.clientX, y: e.clientY });
+    setShowContextMenu(true);
+  };
+
+  // 删除节点
+  const handleDeleteNode = () => {
+    deleteNode(data.id);
+    setShowContextMenu(false);
+  };
+
+  // 关闭右键菜单
+  const handleCloseContextMenu = () => {
+    setShowContextMenu(false);
+  };
+
+  // 点击其他地方关闭菜单
+  React.useEffect(() => {
+    const handleClickOutside = () => {
+      if (showContextMenu) {
+        setShowContextMenu(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [showContextMenu]);
   
   // 统一使用我们的高亮逻辑，忽略React Flow的selected
   const isHighlighted = shouldHighlight || nodeSelected;
@@ -126,6 +166,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
       } as React.CSSProperties}
       onClick={handleNodeClick}
       onDoubleClick={handleNodeDoubleClick}
+      onContextMenu={handleContextMenu}
       onMouseEnter={() => {
         setIsHovered(true);
         setShowActions(true);
@@ -169,9 +210,41 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           </div>
         )}
       </div>
-      
 
-      
+      {/* 上方+按钮 - 只在节点高亮且hover时显示 */}
+      {nodeSelected && isHovered && (
+        <div
+          className="sibling-add-button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleGenerateSibling('above');
+          }}
+          title="生成同层级节点"
+        >
+          +
+        </div>
+      )}
+
+      {/* 右键菜单 */}
+      {showContextMenu && (
+        <div
+          className="context-menu"
+          style={{
+            position: 'fixed',
+            left: contextMenuPosition.x,
+            top: contextMenuPosition.y,
+            zIndex: 1000,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="context-menu-item" onClick={handleDeleteNode}>
+            🗑️ 删除节点
+          </div>
+        </div>
+      )}
+
+
+
 
 
 
@@ -425,6 +498,67 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         
         .node-handle-source {
           bottom: -6px;
+        }
+
+        /* 同层级节点生成按钮 */
+        .sibling-add-button {
+          position: absolute;
+          left: 50%;
+          top: -12px;
+          transform: translateX(-50%);
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: #65f0a3;
+          color: #000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          z-index: 10;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .sibling-add-button:hover {
+          transform: translateX(-50%) scale(1.1);
+          box-shadow: 0 4px 8px rgba(101, 240, 163, 0.4);
+          background: #4ade80;
+        }
+
+        .sibling-add-button:active {
+          transform: translateX(-50%) scale(0.95);
+        }
+
+        /* 右键菜单样式 */
+        .context-menu {
+          background: #2a2830;
+          border: 1px solid #404040;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          min-width: 120px;
+          overflow: hidden;
+        }
+
+        .context-menu-item {
+          padding: 8px 12px;
+          color: #ffffff;
+          font-size: 14px;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .context-menu-item:hover {
+          background: #404040;
+        }
+
+        .context-menu-item:active {
+          background: #505050;
         }
       `}</style>
     </div>

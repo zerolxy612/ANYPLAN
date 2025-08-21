@@ -119,7 +119,7 @@ class GeminiService {
     }
 
     try {
-      const prompt = ANALYZE_AND_GENERATE_LEVELS_PROMPT(request.userInput);
+      const prompt = ANALYZE_AND_GENERATE_LEVELS_PROMPT(request.userInput, request.existingLevels);
       const response = await this.sendRequest(prompt);
       const result = this.parseJSONResponse<LevelGenerationResult>(response);
 
