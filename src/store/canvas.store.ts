@@ -127,17 +127,77 @@ const getLevelAreaX = (level: number): number => {
   return l1AreaX + (level - 1) * levelWidth;
 };
 
-// 计算子节点垂直位置 - 中间节点与父节点对齐
-const calculateChildVerticalPositions = (parentY: number, childCount: number): number[] => {
+// 估算节点高度的函数
+const estimateNodeHeight = (content: string, isExpanded: boolean = false): number => {
+  const baseHeight = 50; // 最小高度
+  const padding = 24; // 上下内边距 (12px * 2)
+  const lineHeight = 19.6; // 14px * 1.4
+  const maxWidth = 140; // 文本容器宽度
+
+  if (!isExpanded && content.length <= 30) {
+    // 短文本，不需要展开
+    const lines = Math.ceil(content.length / 20); // 粗略估算行数
+    return Math.max(baseHeight, padding + lines * lineHeight);
+  }
+
+  if (!isExpanded) {
+    // 长文本但未展开，使用固定的折叠高度
+    return Math.max(baseHeight, padding + 98); // 98px是collapsed状态的max-height
+  }
+
+  // 展开状态，根据实际内容计算高度
+  const avgCharsPerLine = 20; // 平均每行字符数
+  const lines = Math.ceil(content.length / avgCharsPerLine);
+  const contentHeight = lines * lineHeight;
+  const expandIndicatorHeight = 32; // 展开指示器高度
+
+  return Math.max(baseHeight, padding + contentHeight + expandIndicatorHeight);
+};
+
+// 智能计算子节点垂直位置 - 考虑节点实际高度
+const calculateChildVerticalPositions = (
+  parentY: number,
+  childCount: number,
+  childContents: string[] = [],
+  expandedStates: boolean[] = []
+): number[] => {
   if (childCount === 1) {
     return [parentY]; // 单个子节点直接对齐父节点
   }
 
-  const spacing = Math.max(60, Math.min(120, 300 / Math.max(childCount - 1, 1)));
-  const totalHeight = (childCount - 1) * spacing;
+  // 估算每个节点的高度
+  const nodeHeights = childContents.map((content, index) =>
+    estimateNodeHeight(content, expandedStates[index] || false)
+  );
+
+  // 计算最小间距（确保节点不重叠）
+  const minSpacing = 20; // 节点之间的最小间距
+
+  // 计算总高度和位置
+  let totalHeight = 0;
+  const spacings: number[] = [];
+
+  for (let i = 0; i < childCount - 1; i++) {
+    const currentNodeHeight = nodeHeights[i];
+    const nextNodeHeight = nodeHeights[i + 1];
+    const requiredSpacing = Math.max(
+      minSpacing,
+      (currentNodeHeight + nextNodeHeight) / 2 + minSpacing
+    );
+    spacings.push(requiredSpacing);
+    totalHeight += requiredSpacing;
+  }
+
+  // 计算起始位置（让中间节点与父节点对齐）
   const startY = parentY - totalHeight / 2;
 
-  return Array.from({ length: childCount }, (_, index) => startY + index * spacing);
+  // 生成位置数组
+  const positions: number[] = [startY];
+  for (let i = 1; i < childCount; i++) {
+    positions.push(positions[i - 1] + spacings[i - 1]);
+  }
+
+  return positions;
 };
 
 // 生成新层级描述的简单函数
@@ -181,6 +241,9 @@ interface CanvasStore {
   // 节点选择状态
   selectedNodesByLevel: Record<number, string | null>; // 每个层级只能选中一个节点
 
+  // 节点展开状态 - 存储每个节点的展开状态
+  nodeExpandedStates: Record<string, boolean>;
+
   // 版本管理
   snapshots: Snapshot[];
   currentSnapshotId: string | null;
@@ -212,6 +275,13 @@ interface CanvasStore {
   selectNode: (nodeId: string, level: number) => void;
   clearNodeSelection: (level?: number) => void;
   isNodeSelected: (nodeId: string) => boolean;
+
+  // 布局管理
+  relayoutSiblingNodes: (nodeId: string) => void;
+
+  // 节点展开状态管理
+  setNodeExpanded: (nodeId: string, expanded: boolean) => void;
+  isNodeExpanded: (nodeId: string) => boolean;
 
   // AI层级管理
   analyzeUserInput: (userInput: string) => Promise<string>;
@@ -289,6 +359,9 @@ export const useCanvasStore = create<CanvasStore>()(
     // 节点选择状态
     selectedNodesByLevel: {},
 
+    // 节点展开状态
+    nodeExpandedStates: {},
+
     snapshots: [],
     currentSnapshotId: null,
     loading: defaultLoadingState,
@@ -348,6 +421,42 @@ export const useCanvasStore = create<CanvasStore>()(
       state.selectedPath = null;
     }),
 
+    // 重新布局同层级节点
+    relayoutSiblingNodes: (nodeId: string) => set((state) => {
+      const targetNode = state.nodes.find(n => n.id === nodeId);
+      if (!targetNode || !targetNode.data.parentId) return;
+
+      // 找到所有同级节点
+      const siblingNodes = state.nodes.filter(n =>
+        n.data.parentId === targetNode.data.parentId && n.data.level === targetNode.data.level
+      );
+
+      if (siblingNodes.length <= 1) return;
+
+      // 获取父节点位置
+      const parentNode = state.nodes.find(n => n.id === targetNode.data.parentId);
+      if (!parentNode) return;
+
+      // 重新计算位置，使用实际的展开状态
+      const childContents = siblingNodes.map(node => node.data.content);
+      const expandedStates = siblingNodes.map(node => state.nodeExpandedStates[node.id] || false);
+
+      const yPositions = calculateChildVerticalPositions(
+        parentNode.position.y,
+        siblingNodes.length,
+        childContents,
+        expandedStates
+      );
+
+      // 更新节点位置
+      siblingNodes.forEach((node, index) => {
+        const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
+        if (nodeIndex !== -1) {
+          state.nodes[nodeIndex].position.y = yPositions[index];
+        }
+      });
+    }),
+
     // 节点选择管理
     selectNode: (nodeId, level) => set((state) => {
       // 清除该层级之前的选择
@@ -367,6 +476,50 @@ export const useCanvasStore = create<CanvasStore>()(
     isNodeSelected: (nodeId) => {
       const state = get();
       return Object.values(state.selectedNodesByLevel).includes(nodeId);
+    },
+
+    // 节点展开状态管理
+    setNodeExpanded: (nodeId, expanded) => set((state) => {
+      state.nodeExpandedStates[nodeId] = expanded;
+
+      // 当展开状态改变时，重新布局同级节点
+      const targetNode = state.nodes.find(n => n.id === nodeId);
+      if (targetNode && targetNode.data.parentId) {
+        // 找到所有同级节点
+        const siblingNodes = state.nodes.filter(n =>
+          n.data.parentId === targetNode.data.parentId && n.data.level === targetNode.data.level
+        );
+
+        if (siblingNodes.length > 1) {
+          // 获取父节点位置
+          const parentNode = state.nodes.find(n => n.id === targetNode.data.parentId);
+          if (parentNode) {
+            // 重新计算位置
+            const childContents = siblingNodes.map(node => node.data.content);
+            const expandedStates = siblingNodes.map(node => state.nodeExpandedStates[node.id] || false);
+
+            const yPositions = calculateChildVerticalPositions(
+              parentNode.position.y,
+              siblingNodes.length,
+              childContents,
+              expandedStates
+            );
+
+            // 更新节点位置
+            siblingNodes.forEach((node, index) => {
+              const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
+              if (nodeIndex !== -1) {
+                state.nodes[nodeIndex].position.y = yPositions[index];
+              }
+            });
+          }
+        }
+      }
+    }),
+
+    isNodeExpanded: (nodeId) => {
+      const state = get();
+      return state.nodeExpandedStates[nodeId] || false;
     },
 
     // AI层级管理
@@ -613,7 +766,17 @@ export const useCanvasStore = create<CanvasStore>()(
             const l1AreaWidth = 300; // L1区域宽度
             const canvasCenterY = 300; // 画布垂直居中
 
-            // 生成3个选项节点，垂直排列在L1区域内
+            // 使用智能布局计算L1节点位置
+            const childContents = expansionResult.children.map((child: any) => child.content);
+            const expandedStates = expansionResult.children.map(() => false); // 默认都是收缩状态
+            const yPositions = calculateChildVerticalPositions(
+              canvasCenterY,
+              expansionResult.children.length,
+              childContents,
+              expandedStates
+            );
+
+            // 生成3个选项节点，使用智能垂直布局
             const childNodes = expansionResult.children.map((childData: {
               content: string;
               level: number;
@@ -624,7 +787,7 @@ export const useCanvasStore = create<CanvasStore>()(
                 type: 'keyword' as const,
                 position: {
                   x: l1AreaX + l1AreaWidth / 2 - 90, // 在L1区域中心，节点宽度180px的一半
-                  y: canvasCenterY - 100 + index * 120 // 垂直排列，间距120px
+                  y: yPositions[index] // 使用智能计算的垂直位置
                 },
                 data: {
                   id: `l1-node-${Date.now()}-${index}`,
@@ -684,10 +847,20 @@ export const useCanvasStore = create<CanvasStore>()(
           const parentNode = state.nodes[parentNodeIndex];
           const childLevel = parentNode.data.level + 1;
 
-          // 计算子节点位置 - 使用层级区域布局，中间节点与父节点对齐
+          // 计算子节点位置 - 使用智能布局，考虑节点实际高度
           const levelAreaX = getLevelAreaX(childLevel);
           const levelCenterX = levelAreaX + 150; // 层级区域中心
-          const yPositions = calculateChildVerticalPositions(parentNode.position.y, expansionResult.children.length);
+
+          // 提取子节点内容和默认展开状态
+          const childContents = expansionResult.children.map((child: any) => child.content);
+          const expandedStates = expansionResult.children.map(() => false); // 默认都是收缩状态
+
+          const yPositions = calculateChildVerticalPositions(
+            parentNode.position.y,
+            expansionResult.children.length,
+            childContents,
+            expandedStates
+          );
 
           // 生成子节点
           const childNodes = expansionResult.children.map((childData: {

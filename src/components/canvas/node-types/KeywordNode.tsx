@@ -22,8 +22,13 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     selectNode,
     clearNodeSelection,
     isNodeSelected,
-    nodes
+    nodes,
+    setNodeExpanded,
+    isNodeExpanded
   } = useCanvasStore();
+
+  // 使用 store 中的展开状态
+  const isExpanded = isNodeExpanded(data.id);
 
   const levelColor = getLevelColor(data.level);
   const isGenerating = loading.isGenerating;
@@ -71,6 +76,11 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
       selectNode(data.id, data.level);
     }
   };
+
+  const handleNodeDoubleClick = () => {
+    // 双击展开/收缩节点
+    setNodeExpanded(data.id, !isExpanded);
+  };
   
   return (
     <div
@@ -80,8 +90,10 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         borderWidth: (selected || nodeSelected) ? '2px' : '1px',
         backgroundColor: (selected || nodeSelected) ? '#65f0a3' : levelColor,
         boxShadow: (selected || nodeSelected) ? `0 0 0 2px #65f0a320` : '0 1px 3px rgba(0, 0, 0, 0.3)',
-      }}
+        '--node-bg-color': (selected || nodeSelected) ? '#65f0a3' : levelColor,
+      } as React.CSSProperties}
       onClick={handleNodeClick}
+      onDoubleClick={handleNodeDoubleClick}
       onMouseEnter={() => {
         setIsHovered(true);
         setShowActions(true);
@@ -93,10 +105,30 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     >
       {/* 节点内容 */}
       <div className="node-content">
-        <div className="content-text">
-          {data.content}
+        <div
+          className={`content-text ${isExpanded ? 'expanded' : 'collapsed'}`}
+        >
+          <div className="text-content">
+            {data.content}
+          </div>
+          {data.content.length > 30 && (
+            <>
+              {!isExpanded && <div className="fade-overlay"></div>}
+              <div className="expand-indicator" title="双击展开/收缩">
+                {isExpanded ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+            </>
+          )}
         </div>
-        
+
         {/* 加载状态 */}
         {(isGenerating || isRenewing) && (
           <div className="loading-overlay">
@@ -121,7 +153,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           min-width: 180px;
           max-width: 180px;
           min-height: 50px;
-          max-height: 50px;
+          max-height: ${isExpanded ? 'none' : '150px'};
           border-radius: 25px;
           border: 1px solid #e2e8f0;
           background: white;
@@ -130,6 +162,11 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           cursor: pointer;
           display: flex;
           flex-direction: column;
+        }
+
+        .keyword-node:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
         .keyword-node.selected {
@@ -153,21 +190,101 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           padding: 12px 20px;
           flex: 1;
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: center;
           position: relative;
         }
         
         .content-text {
-          text-align: center;
+          text-align: left;
           font-size: 14px;
-          line-height: 1.2;
+          line-height: 1.4;
           color: #d9d9d9;
           word-break: break-word;
-          white-space: nowrap;
+          width: 140px;
+          position: relative;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .content-text.collapsed {
+          max-height: 98px; /* 约7行文字的高度 (14px * 1.4 * 5 ≈ 98px) */
           overflow: hidden;
-          text-overflow: ellipsis;
-          max-width: 140px;
+          white-space: pre-wrap;
+        }
+
+        .content-text.expanded {
+          max-height: none;
+          overflow: visible;
+          white-space: pre-wrap;
+        }
+
+        .text-content {
+          position: relative;
+          z-index: 1;
+        }
+
+        .fade-overlay {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 50px;
+          background: linear-gradient(
+            to bottom,
+            transparent 0%,
+            rgba(38, 38, 39, 0.3) 30%,
+            rgba(38, 38, 39, 0.8) 70%,
+            var(--node-bg-color, #262627) 100%
+          );
+          pointer-events: none;
+          z-index: 2;
+        }
+
+        .keyword-node.selected .fade-overlay {
+          background: linear-gradient(
+            to bottom,
+            transparent 0%,
+            rgba(101, 240, 163, 0.3) 30%,
+            rgba(101, 240, 163, 0.8) 70%,
+            #65f0a3 100%
+          );
+        }
+
+        .expand-indicator {
+          position: absolute;
+          bottom: 8px;
+          left: 50%;
+          transform: translateX(-50%);
+          color: #888;
+          z-index: 3;
+          opacity: 0.8;
+          transition: all 0.2s ease;
+          background: rgba(0, 0, 0, 0.3);
+          border-radius: 50%;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+
+        .expand-indicator:hover {
+          opacity: 1;
+          background: rgba(0, 0, 0, 0.5);
+          transform: translateX(-50%) scale(1.1);
+        }
+
+        .content-text.expanded .expand-indicator {
+          position: relative;
+          bottom: auto;
+          left: auto;
+          transform: none;
+          margin: 8px auto 0;
+        }
+
+        .content-text:hover .expand-indicator {
+          opacity: 1;
         }
 
         .keyword-node.selected .content-text {
