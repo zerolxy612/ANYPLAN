@@ -16,6 +16,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const [showActions, setShowActions] = useState(false);
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(data.content);
   const {
     generateChildren,
     renewNode,
@@ -28,7 +30,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     nodes,
     setNodeExpanded,
     isNodeExpanded,
-    generateSiblingNode
+    generateSiblingNode,
+    updateNodeContent
   } = useCanvasStore();
 
   // 使用 store 中的展开状态
@@ -137,6 +140,37 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     setShowContextMenu(false);
   };
 
+  // 开始编辑
+  const handleStartEdit = () => {
+    setIsEditing(true);
+    setEditValue(data.content);
+  };
+
+  // 保存编辑
+  const handleSaveEdit = () => {
+    if (editValue.trim() && editValue !== data.content) {
+      updateNodeContent(data.id, editValue.trim());
+    }
+    setIsEditing(false);
+  };
+
+  // 取消编辑
+  const handleCancelEdit = () => {
+    setEditValue(data.content);
+    setIsEditing(false);
+  };
+
+  // 处理键盘事件
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancelEdit();
+    }
+  };
+
   // 点击其他地方关闭菜单
   React.useEffect(() => {
     const handleClickOutside = () => {
@@ -178,29 +212,45 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     >
       {/* 节点内容 */}
       <div className="node-content">
-        <div
-          className={`content-text ${isExpanded ? 'expanded' : 'collapsed'}`}
-        >
-          <div className="text-content">
-            {data.content}
+        {isEditing ? (
+          // 编辑模式
+          <div className="edit-mode">
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={handleSaveEdit}
+              className="edit-input"
+              autoFocus
+            />
           </div>
-          {data.content.length > 30 && (
-            <>
-              {!isExpanded && <div className="fade-overlay"></div>}
-              <div className="expand-indicator" title="双击展开/收缩">
-                {isExpanded ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                )}
-              </div>
-            </>
-          )}
-        </div>
+        ) : (
+          // 显示模式
+          <div
+            className={`content-text ${isExpanded ? 'expanded' : 'collapsed'}`}
+          >
+            <div className="text-content">
+              {data.content}
+            </div>
+            {data.content.length > 30 && (
+              <>
+                {!isExpanded && <div className="fade-overlay"></div>}
+                <div className="expand-indicator" title="双击展开/收缩">
+                  {isExpanded ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* 加载状态 */}
         {(isGenerating || isRenewing) && (
@@ -210,6 +260,22 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           </div>
         )}
       </div>
+
+      {/* 编辑按钮 - 右侧下拉箭头 */}
+      {!isEditing && (
+        <div
+          className="edit-button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleStartEdit();
+          }}
+          title="编辑节点内容"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      )}
 
       {/* 上方+按钮 - 只在节点高亮且hover时显示 */}
       {nodeSelected && isHovered && (
@@ -559,6 +625,49 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
 
         .context-menu-item:active {
           background: #505050;
+        }
+
+        /* 编辑功能样式 */
+        .edit-button {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          border-radius: 4px;
+          transition: all 0.2s ease;
+          color: #666;
+        }
+
+        .edit-button:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: #fff;
+        }
+
+        .edit-mode {
+          width: 100%;
+          padding: 8px;
+        }
+
+        .edit-input {
+          width: 100%;
+          background: transparent;
+          border: 1px solid #65f0a3;
+          border-radius: 4px;
+          padding: 4px 8px;
+          color: #fff;
+          font-size: 14px;
+          outline: none;
+        }
+
+        .edit-input:focus {
+          border-color: #4ade80;
+          box-shadow: 0 0 0 2px rgba(101, 240, 163, 0.2);
         }
       `}</style>
     </div>

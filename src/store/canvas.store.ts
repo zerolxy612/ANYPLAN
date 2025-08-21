@@ -285,6 +285,7 @@ interface CanvasStore {
   // 节点操作
   addNode: (node: CanvasNode) => void;
   updateNode: (nodeId: string, updates: Partial<CanvasNode>) => void;
+  updateNodeContent: (nodeId: string, newContent: string) => void;
   deleteNode: (nodeId: string) => void;
   
   // 边操作
@@ -435,6 +436,14 @@ export const useCanvasStore = create<CanvasStore>()(
       const nodeIndex = state.nodes.findIndex(n => n.id === nodeId);
       if (nodeIndex !== -1) {
         state.nodes[nodeIndex] = { ...state.nodes[nodeIndex], ...updates };
+      }
+    }),
+
+    updateNodeContent: (nodeId, newContent) => set((state) => {
+      const nodeIndex = state.nodes.findIndex(n => n.id === nodeId);
+      if (nodeIndex !== -1 && state.nodes[nodeIndex].data) {
+        state.nodes[nodeIndex].data.content = newContent;
+        console.log('✅ Node content updated:', nodeId, newContent);
       }
     }),
 
