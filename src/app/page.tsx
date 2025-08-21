@@ -3,9 +3,10 @@
 import React from 'react';
 import Canvas from '@/components/canvas/Canvas';
 import ChatPanel from '@/components/sidebar/ChatPanel';
+import { useCanvasStore } from '@/store/canvas.store';
 
 export default function Home() {
-  const [mode, setMode] = React.useState<'inquiry' | 'writing'>('inquiry');
+  const { mode, setMode } = useCanvasStore();
 
   return (
     <div className="canvas-page">

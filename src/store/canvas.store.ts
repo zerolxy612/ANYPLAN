@@ -238,6 +238,9 @@ interface CanvasStore {
   originalPrompt: string;
   isAIGenerating: boolean;
 
+  // 模式管理
+  mode: 'inquiry' | 'writing';
+
   // 节点选择状态
   selectedNodesByLevel: Record<number, string | null>; // 每个层级只能选中一个节点
 
@@ -271,10 +274,14 @@ interface CanvasStore {
   selectPath: (nodeIds: string[]) => void;
   clearSelection: () => void;
 
+  // 模式管理
+  setMode: (mode: 'inquiry' | 'writing') => void;
+
   // 节点选择
   selectNode: (nodeId: string, level: number) => void;
   clearNodeSelection: (level?: number) => void;
   isNodeSelected: (nodeId: string) => boolean;
+  getHighlightedNodes: () => string[]; // 获取应该高亮的节点列表
 
   // 布局管理
   relayoutSiblingNodes: (nodeId: string) => void;
@@ -356,6 +363,9 @@ export const useCanvasStore = create<CanvasStore>()(
     originalPrompt: '',
     isAIGenerating: false,
 
+    // 模式管理
+    mode: 'inquiry',
+
     // 节点选择状态
     selectedNodesByLevel: {},
 
@@ -421,6 +431,16 @@ export const useCanvasStore = create<CanvasStore>()(
       state.selectedPath = null;
     }),
 
+    // 模式管理
+    setMode: (mode) => set((state) => {
+      state.mode = mode;
+
+      // 切换到写作模式时，清除所有节点选择
+      if (mode === 'writing') {
+        state.selectedNodesByLevel = {};
+      }
+    }),
+
     // 重新布局同层级节点
     relayoutSiblingNodes: (nodeId: string) => set((state) => {
       const targetNode = state.nodes.find(n => n.id === nodeId);
@@ -461,6 +481,11 @@ export const useCanvasStore = create<CanvasStore>()(
     selectNode: (nodeId, level) => set((state) => {
       // 清除该层级之前的选择
       state.selectedNodesByLevel[level] = nodeId;
+
+      // 调试信息
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎯 Node selected:', { nodeId, level, selectedNodesByLevel: state.selectedNodesByLevel });
+      }
     }),
 
     clearNodeSelection: (level) => set((state) => {
@@ -476,6 +501,68 @@ export const useCanvasStore = create<CanvasStore>()(
     isNodeSelected: (nodeId) => {
       const state = get();
       return Object.values(state.selectedNodesByLevel).includes(nodeId);
+    },
+
+    // 获取应该高亮的节点列表
+    getHighlightedNodes: () => {
+      const state = get();
+      const { mode, selectedNodesByLevel, nodes } = state;
+
+      // 调试信息
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 getHighlightedNodes called:', { mode, selectedNodesByLevel });
+      }
+
+      if (mode === 'inquiry') {
+        // 探索模式：只高亮最后选中的节点
+        const selectedLevels = Object.keys(selectedNodesByLevel)
+          .map(level => parseInt(level))
+          .sort((a, b) => b - a); // 降序排列，获取最高层级
+
+        if (selectedLevels.length > 0) {
+          const highestLevel = selectedLevels[0];
+          const nodeId = selectedNodesByLevel[highestLevel];
+          const result = nodeId ? [nodeId] : [];
+
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 Inquiry mode highlight:', { highestLevel, nodeId, result });
+          }
+
+          return result;
+        }
+        return [];
+      } else {
+        // 写作模式：高亮整条选择链路
+        const selectedLevels = Object.keys(selectedNodesByLevel)
+          .map(level => parseInt(level))
+          .sort((a, b) => a - b); // 升序排列
+
+        if (selectedLevels.length === 0) return [];
+
+        // 获取选中的节点链路
+        const selectedChain: string[] = [];
+
+        // 找到最高层级的选中节点
+        const highestLevel = Math.max(...selectedLevels);
+        const targetNodeId = selectedNodesByLevel[highestLevel];
+
+        if (!targetNodeId) return [];
+
+        // 从目标节点向上追溯到根节点
+        let currentNodeId = targetNodeId;
+        while (currentNodeId) {
+          selectedChain.unshift(currentNodeId);
+          const currentNode = nodes.find(n => n.id === currentNodeId);
+          if (!currentNode || !currentNode.data.parentId) break;
+          currentNodeId = currentNode.data.parentId;
+        }
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✍️ Writing mode highlight chain:', { targetNodeId, selectedChain });
+        }
+
+        return selectedChain;
+      }
     },
 
     // 节点展开状态管理
@@ -880,8 +967,8 @@ export const useCanvasStore = create<CanvasStore>()(
               level: childLevel,
               parentId: nodeId,
               type: 'keyword' as const,
-              canExpand: childLevel < 6, // 最多6个层级，L6不能再展开
-              hasChildren: childLevel < 6,
+              canExpand: childLevel < state.levels.length, // 基于实际配置的层级数量
+              hasChildren: childLevel < state.levels.length,
               isGenerating: false,
               isSelected: false,
             } as KeywordNodeData,
@@ -1051,6 +1138,9 @@ export const useCanvasStore = create<CanvasStore>()(
       state.currentLevel = 1;
       state.originalPrompt = '';
       state.isAIGenerating = false;
+
+      // 重置模式
+      state.mode = 'inquiry';
 
       // 重置节点选择状态
       state.selectedNodesByLevel = {};

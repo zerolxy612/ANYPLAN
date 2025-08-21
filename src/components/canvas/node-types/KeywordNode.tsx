@@ -22,7 +22,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     viewport,
     selectNode,
     clearNodeSelection,
-    isNodeSelected,
+    getHighlightedNodes,
     nodes,
     setNodeExpanded,
     isNodeExpanded
@@ -34,7 +34,24 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const levelColor = getLevelColor(data.level);
   const isGenerating = loading.isGenerating;
   const isRenewing = loading.renewingNodeId === data.id;
-  const nodeSelected = isNodeSelected(data.id);
+
+  // 直接计算高亮状态，避免useMemo依赖问题
+  const highlightedNodes = getHighlightedNodes();
+  const shouldHighlight = highlightedNodes.includes(data.id);
+
+  // 在探索模式下，只使用 getHighlightedNodes 的结果
+  // 在写作模式下，使用完整的选择状态
+  const nodeSelected = shouldHighlight; // 统一使用 shouldHighlight
+
+  // 调试信息（开发环境）
+  if (process.env.NODE_ENV === 'development' && (shouldHighlight || nodeSelected)) {
+    console.log(`🎯 Node ${data.id} highlight status:`, {
+      shouldHighlight,
+      nodeSelected,
+      highlightedNodes,
+      content: data.content.substring(0, 20)
+    });
+  }
 
   // 使用配置文件中的节点宽度
   const nodeWidth = NODE_DIMENSIONS.KEYWORD.width;
@@ -72,8 +89,15 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     deleteNode(data.id);
   };
 
-  const handleNodeClick = () => {
-    if (nodeSelected) {
+  const handleNodeClick = (e: React.MouseEvent) => {
+    // 防止事件冒泡
+    e.stopPropagation();
+
+    // 检查当前节点是否是该层级的选中节点
+    const { selectedNodesByLevel } = useCanvasStore.getState();
+    const isCurrentlySelected = selectedNodesByLevel[data.level] === data.id;
+
+    if (isCurrentlySelected) {
       // 如果已选中，则取消选择
       clearNodeSelection(data.level);
     } else {
@@ -87,15 +111,18 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     setNodeExpanded(data.id, !isExpanded);
   };
   
+  // 统一使用我们的高亮逻辑，忽略React Flow的selected
+  const isHighlighted = shouldHighlight || nodeSelected;
+
   return (
     <div
-      className={`keyword-node ${selected || nodeSelected ? 'selected' : ''}`}
+      className={`keyword-node ${isHighlighted ? 'selected' : ''}`}
       style={{
-        borderColor: (selected || nodeSelected) ? '#65f0a3' : '#404040',
-        borderWidth: (selected || nodeSelected) ? '2px' : '1px',
-        backgroundColor: (selected || nodeSelected) ? '#65f0a3' : levelColor,
-        boxShadow: (selected || nodeSelected) ? `0 0 0 2px #65f0a320` : '0 1px 3px rgba(0, 0, 0, 0.3)',
-        '--node-bg-color': (selected || nodeSelected) ? '#65f0a3' : levelColor,
+        borderColor: isHighlighted ? '#65f0a3' : '#404040',
+        borderWidth: isHighlighted ? '2px' : '1px',
+        backgroundColor: isHighlighted ? '#65f0a3' : levelColor,
+        boxShadow: isHighlighted ? `0 0 0 2px #65f0a320` : '0 1px 3px rgba(0, 0, 0, 0.3)',
+        '--node-bg-color': isHighlighted ? '#65f0a3' : levelColor,
       } as React.CSSProperties}
       onClick={handleNodeClick}
       onDoubleClick={handleNodeDoubleClick}
