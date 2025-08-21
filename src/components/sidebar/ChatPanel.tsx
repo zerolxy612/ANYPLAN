@@ -14,7 +14,14 @@ const ChatPanel = () => {
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
 
-  const { analyzeUserInput, isAIGenerating, levels } = useCanvasStore();
+  const {
+    analyzeUserInput,
+    isAIGenerating,
+    levels,
+    mode,
+    getSelectedChainContent,
+    generateReport
+  } = useCanvasStore();
 
   // 根据时间动态设置问候语
   useEffect(() => {
@@ -44,27 +51,49 @@ const ChatPanel = () => {
 
   // 处理用户输入
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isAIGenerating) {
+    if (isAIGenerating) {
       return;
     }
 
-    const userMessage = {
-      id: `user-${Date.now()}`,
-      type: 'user' as const,
-      content: inputValue.trim()
-    };
+    // 检查是否在写作模式且有选中的链路
+    const chainContent = getSelectedChainContent();
+    const isWritingModeWithChain = mode === 'writing' && chainContent.length > 0;
 
-    setMessages((prev: Message[]) => [...prev, userMessage]);
+    // 在写作模式下，即使没有输入内容也可以生成报告
+    if (!inputValue.trim() && !isWritingModeWithChain) {
+      return;
+    }
+
+    // 如果有用户输入，添加用户消息
+    if (inputValue.trim()) {
+      const userMessage = {
+        id: `user-${Date.now()}`,
+        type: 'user' as const,
+        content: inputValue.trim()
+      };
+      setMessages((prev: Message[]) => [...prev, userMessage]);
+    }
+
     const currentInput = inputValue.trim();
     setInputValue('');
 
     try {
-      const aiResponse = await analyzeUserInput(currentInput);
+      let aiResponse: string;
+
+      if (isWritingModeWithChain) {
+        // 写作模式下生成报告
+        console.log('🔍 Generating report for chain:', chainContent);
+        aiResponse = await generateReport(currentInput || undefined);
+      } else {
+        // 普通模式下分析用户输入
+        aiResponse = await analyzeUserInput(currentInput);
+        aiResponse = typeof aiResponse === 'string' ? aiResponse : '分析完成，请查看画布上的结果。';
+      }
 
       const aiMessage: Message = {
         id: `ai-${Date.now()}`,
         type: 'ai' as const,
-        content: typeof aiResponse === 'string' ? aiResponse : '分析完成，请查看画布上的结果。'
+        content: aiResponse
       };
 
       setMessages((prev: Message[]) => [...prev, aiMessage]);
@@ -123,6 +152,9 @@ const ChatPanel = () => {
         ) : levels.length > 0 && (
           <div className="levels-info">
             <p className="levels-text">已生成 {levels.length} 个层级的探索框架</p>
+            {mode === 'writing' && getSelectedChainContent().length > 0 && (
+              <p className="chain-status">✅ 已选择 {getSelectedChainContent().length} 层思考链路，可生成分析报告</p>
+            )}
           </div>
         )}
 
@@ -131,7 +163,11 @@ const ChatPanel = () => {
           <div className="input-container">
             <textarea
               className="chat-input"
-              placeholder="请输入您的问题或上传文件"
+              placeholder={
+                mode === 'writing' && getSelectedChainContent().length > 0
+                  ? "基于您选择的思考链路生成分析报告，或输入补充说明..."
+                  : "请输入您的问题或上传文件"
+              }
               rows={3}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -153,7 +189,7 @@ const ChatPanel = () => {
                   className={`action-button send-button ${isAIGenerating ? 'disabled' : ''}`}
                   title="发送"
                   onClick={handleSendMessage}
-                  disabled={isAIGenerating || !inputValue.trim()}
+                  disabled={isAIGenerating || (!inputValue.trim() && !(mode === 'writing' && getSelectedChainContent().length > 0))}
                 >
                   {isAIGenerating ? '⏳' : '↑'}
                 </button>
@@ -271,6 +307,13 @@ const ChatPanel = () => {
           color: #65f0a3;
           font-size: 14px;
           margin: 0;
+        }
+
+        .chain-status {
+          color: #65f0a3;
+          font-size: 12px;
+          margin: 4px 0 0 0;
+          font-weight: 500;
         }
 
         .text-block {

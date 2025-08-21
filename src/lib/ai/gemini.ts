@@ -1,17 +1,20 @@
-import { 
-  GeminiRequest, 
-  GeminiResponse, 
-  AIServiceConfig, 
+import {
+  GeminiRequest,
+  GeminiResponse,
+  AIServiceConfig,
   AIServiceError,
   AnalysisRequest,
   LevelGenerationResult,
   NodeExpansionRequest,
-  NodeExpansionResult
+  NodeExpansionResult,
+  ReportGenerationRequest,
+  ReportGenerationResult
 } from './types';
-import { 
-  ANALYZE_AND_GENERATE_LEVELS_PROMPT, 
+import {
+  ANALYZE_AND_GENERATE_LEVELS_PROMPT,
   EXPAND_NODE_PROMPT,
-  SYSTEM_PROMPT 
+  GENERATE_REPORT_PROMPT,
+  SYSTEM_PROMPT
 } from './prompts';
 
 // Gemini API配置
@@ -143,7 +146,7 @@ class GeminiService {
         request.parentContext,
         request.userPrompt
       );
-      
+
       const response = await this.sendRequest(prompt);
       const result = this.parseJSONResponse<NodeExpansionResult>(response);
 
@@ -158,6 +161,45 @@ class GeminiService {
         throw error;
       }
       throw this.createError('API_ERROR', error instanceof Error ? error.message : 'Node expansion failed');
+    }
+  }
+
+  // 生成分析报告
+  async generateReport(request: ReportGenerationRequest): Promise<ReportGenerationResult> {
+    try {
+      // 验证输入
+      if (!request.chainContent || request.chainContent.length === 0) {
+        throw this.createError('API_ERROR', 'Chain content cannot be empty');
+      }
+
+      const prompt = GENERATE_REPORT_PROMPT(request.chainContent, request.userInput);
+      const response = await this.sendRequest(prompt);
+
+      // 对于报告生成，我们直接返回文本内容，不需要JSON解析
+      const report = response.trim();
+
+      if (!report) {
+        throw new Error('Empty report generated');
+      }
+
+      // 计算一些元数据
+      const wordCount = report.length;
+      const generatedAt = new Date().toISOString();
+      const chainLength = request.chainContent.length;
+
+      return {
+        report,
+        metadata: {
+          wordCount,
+          generatedAt,
+          chainLength
+        }
+      };
+    } catch (error) {
+      if (error instanceof Error && 'code' in error) {
+        throw error;
+      }
+      throw this.createError('API_ERROR', error instanceof Error ? error.message : 'Report generation failed');
     }
   }
 

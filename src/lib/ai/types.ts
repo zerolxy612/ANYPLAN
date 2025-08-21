@@ -95,6 +95,27 @@ export interface AIServiceConfig {
   timeout: number;
 }
 
+// 报告生成请求
+export interface ReportGenerationRequest {
+  chainContent: Array<{
+    nodeId: string;
+    content: string;
+    level: number;
+    levelDescription: string;
+  }>;
+  userInput?: string;
+}
+
+// 报告生成结果
+export interface ReportGenerationResult {
+  report: string; // Markdown格式的报告内容
+  metadata?: {
+    wordCount: number;
+    generatedAt: string;
+    chainLength: number;
+  };
+}
+
 // AI服务错误类型
 export interface AIServiceError {
   code: 'NETWORK_ERROR' | 'API_ERROR' | 'PARSE_ERROR' | 'TIMEOUT_ERROR';

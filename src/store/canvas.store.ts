@@ -283,6 +283,14 @@ interface CanvasStore {
   isNodeSelected: (nodeId: string) => boolean;
   getHighlightedNodes: () => string[]; // 获取应该高亮的节点列表
 
+  // 获取当前选中链路的内容
+  getSelectedChainContent: () => Array<{
+    nodeId: string;
+    content: string;
+    level: number;
+    levelDescription: string;
+  }>;
+
   // 布局管理
   relayoutSiblingNodes: (nodeId: string) => void;
 
@@ -303,6 +311,9 @@ interface CanvasStore {
   generateChildren: (nodeId: string, context: NodeContext) => Promise<void>;
   renewNode: (nodeId: string, context: NodeContext) => Promise<void>;
   generateInitialNodes: (analysisResult: AIAnalysisResult) => void;
+
+  // 报告生成
+  generateReport: (userInput?: string) => Promise<string>;
   
   // 版本管理
   saveSnapshot: (name: string, description?: string) => Promise<void>;
@@ -563,6 +574,63 @@ export const useCanvasStore = create<CanvasStore>()(
 
         return selectedChain;
       }
+    },
+
+    // 获取当前选中链路的内容
+    getSelectedChainContent: () => {
+      const state = get();
+      const { mode, selectedNodesByLevel, nodes, levels, originalPrompt } = state;
+
+      // 只在写作模式下提供链路内容
+      if (mode !== 'writing') {
+        return [];
+      }
+
+      // 获取高亮的节点列表
+      const highlightedNodeIds = state.getHighlightedNodes();
+
+      if (highlightedNodeIds.length === 0) {
+        return [];
+      }
+
+      // 构建链路内容数组
+      const chainContent: Array<{
+        nodeId: string;
+        content: string;
+        level: number;
+        levelDescription: string;
+      }> = [];
+
+      // 添加原始问题作为L0层级
+      chainContent.push({
+        nodeId: 'original-prompt',
+        content: originalPrompt,
+        level: 0,
+        levelDescription: '原始问题'
+      });
+
+      // 按层级顺序添加选中的节点
+      highlightedNodeIds.forEach(nodeId => {
+        const node = nodes.find(n => n.id === nodeId);
+        if (node && node.data) {
+          const levelInfo = levels.find(l => l.level === node.data.level);
+          chainContent.push({
+            nodeId: node.id,
+            content: node.data.content,
+            level: node.data.level,
+            levelDescription: levelInfo?.description || `L${node.data.level}`
+          });
+        }
+      });
+
+      // 按层级排序
+      chainContent.sort((a, b) => a.level - b.level);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📋 Selected chain content:', chainContent);
+      }
+
+      return chainContent;
     },
 
     // 节点展开状态管理
@@ -1148,5 +1216,46 @@ export const useCanvasStore = create<CanvasStore>()(
       state.loading = defaultLoadingState;
       state.error = null;
     }),
+
+    // 报告生成
+    generateReport: async (userInput?: string) => {
+      const state = get();
+
+      // 检查是否在写作模式
+      if (state.mode !== 'writing') {
+        throw new Error('报告生成只在写作模式下可用');
+      }
+
+      // 获取链路内容
+      const chainContent = state.getSelectedChainContent();
+
+      if (chainContent.length === 0) {
+        throw new Error('请先选择一条完整的思考链路');
+      }
+
+      set((state) => {
+        state.isAIGenerating = true;
+      });
+
+      try {
+        const result = await geminiService.generateReport({
+          chainContent,
+          userInput
+        });
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📊 Report generated:', result.metadata);
+        }
+
+        return result.report;
+      } catch (error) {
+        console.error('Report generation failed:', error);
+        throw error;
+      } finally {
+        set((state) => {
+          state.isAIGenerating = false;
+        });
+      }
+    },
   }))
 );
