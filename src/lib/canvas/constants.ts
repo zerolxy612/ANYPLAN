@@ -15,7 +15,7 @@ export const EDGE_TYPES = {
 // 节点尺寸
 export const NODE_DIMENSIONS = {
   KEYWORD: {
-    width: 240,
+    width: 215, // 增加节点宽度，从240改为300
     height: 50,
   },
   ORIGINAL: {

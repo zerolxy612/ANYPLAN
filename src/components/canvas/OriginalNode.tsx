@@ -82,7 +82,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        zIndex: 10,
+        zIndex: 2, // 降低层级，确保不覆盖sidebar(z-index:10)
       }}
     >
       {/* 重新生成按钮 */}
@@ -105,7 +105,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
           fontSize: '14px',
           transition: 'all 0.2s ease',
           pointerEvents: 'auto',
-          zIndex: 15,
+          zIndex: 3, // 降低层级，确保不覆盖sidebar(z-index:10)
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.backgroundColor = '#65f0a3';
@@ -216,7 +216,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
           fontWeight: 'bold',
           transition: 'all 0.2s ease',
           pointerEvents: 'auto',
-          zIndex: 15,
+          zIndex: 3, // 降低层级，确保不覆盖sidebar(z-index:10)
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',  // 调整阴影
         }}
         onMouseEnter={(e) => {

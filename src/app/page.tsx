@@ -67,6 +67,8 @@ export default function Home() {
           border-left: 1px solid #404040;
           display: flex;
           flex-direction: column;
+          position: relative;
+          z-index: 10; /* 确保sidebar在画布按钮之上 */
         }
 
         .mode-toggle {

@@ -5,6 +5,7 @@ import { NodeProps } from '@xyflow/react';
 import { KeywordNodeData } from '@/types/canvas';
 import { useCanvasStore } from '@/store/canvas.store';
 import { getLevelColor } from '@/lib/canvas/utils';
+import { NODE_DIMENSIONS } from '@/lib/canvas/constants';
 
 interface KeywordNodeProps extends NodeProps {
   data: KeywordNodeData;
@@ -34,6 +35,10 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const isGenerating = loading.isGenerating;
   const isRenewing = loading.renewingNodeId === data.id;
   const nodeSelected = isNodeSelected(data.id);
+
+  // 使用配置文件中的节点宽度
+  const nodeWidth = NODE_DIMENSIONS.KEYWORD.width;
+  const contentWidth = nodeWidth - 40; // 减去padding
 
 
 
@@ -150,8 +155,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
 
       <style jsx>{`
         .keyword-node {
-          min-width: 180px;
-          max-width: 180px;
+          min-width: ${nodeWidth}px;
+          max-width: ${nodeWidth}px;
           min-height: 50px;
           max-height: ${isExpanded ? 'none' : '150px'};
           border-radius: 25px;
@@ -201,7 +206,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           line-height: 1.4;
           color: #d9d9d9;
           word-break: break-word;
-          width: 140px;
+          width: ${contentWidth}px;
           position: relative;
           cursor: pointer;
           transition: all 0.3s ease;
