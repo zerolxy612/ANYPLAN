@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useCanvasStore } from '@/store/canvas.store';
 
 interface Message {
   id: string;
   type: 'user' | 'ai';
   content: string;
+  isMarkdown?: boolean; // 标识是否需要Markdown渲染
 }
 
 const ChatPanel = () => {
@@ -93,7 +96,8 @@ const ChatPanel = () => {
       const aiMessage: Message = {
         id: `ai-${Date.now()}`,
         type: 'ai' as const,
-        content: aiResponse
+        content: aiResponse,
+        isMarkdown: isWritingModeWithChain // 报告类型的消息使用Markdown渲染
       };
 
       setMessages((prev: Message[]) => [...prev, aiMessage]);
@@ -123,8 +127,26 @@ const ChatPanel = () => {
         <div className="messages-section">
           {messages.map((message) => (
             <div key={message.id} className={`message ${message.type}`}>
-              <div className="message-content">
-                {message.content}
+              <div className={`message-content ${message.isMarkdown ? 'markdown-content' : ''}`}>
+                {message.isMarkdown ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      h1: ({children}) => <h1 className="markdown-h1">{children}</h1>,
+                      h2: ({children}) => <h2 className="markdown-h2">{children}</h2>,
+                      h3: ({children}) => <h3 className="markdown-h3">{children}</h3>,
+                      p: ({children}) => <p className="markdown-p">{children}</p>,
+                      strong: ({children}) => <strong className="markdown-strong">{children}</strong>,
+                      ul: ({children}) => <ul className="markdown-ul">{children}</ul>,
+                      ol: ({children}) => <ol className="markdown-ol">{children}</ol>,
+                      li: ({children}) => <li className="markdown-li">{children}</li>,
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                ) : (
+                  message.content
+                )}
               </div>
             </div>
           ))}
@@ -314,6 +336,58 @@ const ChatPanel = () => {
           font-size: 12px;
           margin: 4px 0 0 0;
           font-weight: 500;
+        }
+
+        /* Markdown 样式 */
+        .markdown-content {
+          line-height: 1.6;
+        }
+
+        .markdown-h1 {
+          font-size: 18px;
+          font-weight: 600;
+          color: #ffffff;
+          margin: 16px 0 12px 0;
+          border-bottom: 2px solid #65f0a3;
+          padding-bottom: 4px;
+        }
+
+        .markdown-h2 {
+          font-size: 16px;
+          font-weight: 600;
+          color: #ffffff;
+          margin: 14px 0 10px 0;
+          border-bottom: 1px solid #444;
+          padding-bottom: 2px;
+        }
+
+        .markdown-h3 {
+          font-size: 14px;
+          font-weight: 600;
+          color: #ffffff;
+          margin: 12px 0 8px 0;
+        }
+
+        .markdown-p {
+          margin: 8px 0;
+          color: #ffffff;
+          line-height: 1.6;
+        }
+
+        .markdown-strong {
+          color: #65f0a3;
+          font-weight: 600;
+        }
+
+        .markdown-ul, .markdown-ol {
+          margin: 8px 0;
+          padding-left: 20px;
+        }
+
+        .markdown-li {
+          margin: 4px 0;
+          color: #ffffff;
+          line-height: 1.5;
         }
 
         .text-block {
