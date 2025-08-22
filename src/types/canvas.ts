@@ -171,3 +171,36 @@ export interface ExportData {
   config: CanvasConfig;
   exportedAt: Date;
 }
+
+// 画布快照相关类型
+export interface CanvasSnapshot {
+  version: string;
+  createdAt: string;
+  originalPrompt: string;
+  levels: AILevel[];
+  nodes: CanvasNode[];
+  edges: CanvasEdge[];
+  selectedPath: Array<{
+    nodeId: string;
+    level: number;
+  }>;
+  viewport?: Viewport;
+  metadata: {
+    title?: string;
+    description?: string;
+    nodeCount: number;
+    levelCount: number;
+    appVersion?: string;
+  };
+}
+
+// 报告生成相关类型
+export interface ReportGenerationRequest {
+  chainContent: Array<{
+    nodeId: string;
+    content: string;
+    level: number;
+    levelDescription: string;
+  }>;
+  userInput?: string;
+}

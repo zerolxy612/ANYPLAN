@@ -12,11 +12,13 @@ import {
   NodeContext,
   AILevel,
   AIAnalysisResult,
-  KeywordNodeData
+  KeywordNodeData,
+  CanvasSnapshot
 } from '@/types/canvas';
 import { NodeExpansionResult } from '@/lib/ai/types';
 import { geminiService } from '@/lib/ai/gemini';
 import { CHATBOT_RESPONSE_TEMPLATE } from '@/lib/ai/prompts';
+import { downloadFile, createSnapshotFilename } from '@/lib/utils/file';
 // AI 辅助函数 - 使用真实的 Gemini API
 const analyzeUserInput = async (userInput: string, existingLevels?: Array<{level: number, description: string}>) => {
   try {
@@ -339,6 +341,11 @@ interface CanvasStore {
 
   // 报告生成
   generateReport: (userInput?: string) => Promise<string>;
+  generateReportWithSnapshot: (userInput?: string) => Promise<string>;
+
+  // 画布快照导出导入
+  exportSnapshot: (title?: string, description?: string) => void;
+  importSnapshot: (snapshot: CanvasSnapshot) => void;
   
   // 版本管理
   saveSnapshot: (name: string, description?: string) => Promise<void>;
@@ -1444,6 +1451,166 @@ export const useCanvasStore = create<CanvasStore>()(
         set((state) => {
           state.isAIGenerating = false;
         });
+      }
+    },
+
+    // 生成报告并同时导出快照（伴随文件）
+    generateReportWithSnapshot: async (userInput?: string) => {
+      const state = get();
+      const chainContent = state.getSelectedChainContent();
+
+      if (chainContent.length === 0) {
+        throw new Error('请先选择完整的思维链路');
+      }
+
+      set((state) => {
+        state.isAIGenerating = true;
+      });
+
+      try {
+        // 生成报告内容
+        const reportResult = await geminiService.generateReport({
+          chainContent,
+          userInput
+        });
+
+        // 创建时间戳
+        const timestamp = Date.now();
+        const dateStr = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
+
+        // 1. 下载报告文件（Markdown格式）
+        const reportBlob = new Blob([reportResult.report], { type: 'text/markdown' });
+        downloadFile(reportBlob, `anyplan-report-${dateStr}-${timestamp}.md`);
+
+        // 2. 创建并下载快照文件
+        const selectedPath = Object.entries(state.selectedNodesByLevel).map(([level, nodeId]) => ({
+          nodeId: nodeId!,
+          level: parseInt(level)
+        }));
+
+        const snapshot: CanvasSnapshot = {
+          version: '1.0',
+          createdAt: new Date().toISOString(),
+          originalPrompt: state.originalPrompt,
+          levels: state.levels,
+          nodes: state.nodes,
+          edges: state.edges,
+          selectedPath,
+          viewport: state.viewport,
+          metadata: {
+            title: `思维探索报告 - ${dateStr}`,
+            description: '与报告配套的思维导图快照',
+            nodeCount: state.nodes.length,
+            levelCount: state.levels.length,
+            appVersion: '1.0.0'
+          }
+        };
+
+        const snapshotBlob = new Blob([JSON.stringify(snapshot, null, 2)], {
+          type: 'application/json'
+        });
+        downloadFile(snapshotBlob, `anyplan-graph-${dateStr}-${timestamp}.snapshot.json`);
+
+        console.log('✅ Report and snapshot downloaded successfully');
+        return reportResult.report;
+
+      } catch (error) {
+        console.error('Report generation failed:', error);
+        throw error;
+      } finally {
+        set((state) => {
+          state.isAIGenerating = false;
+        });
+      }
+    },
+
+    // 导出画布快照
+    exportSnapshot: (title?: string, description?: string) => {
+      const state = get();
+
+      // 获取当前选中路径
+      const selectedPath = Object.entries(state.selectedNodesByLevel).map(([level, nodeId]) => ({
+        nodeId: nodeId!,
+        level: parseInt(level)
+      }));
+
+      // 创建快照数据
+      const snapshot: CanvasSnapshot = {
+        version: '1.0',
+        createdAt: new Date().toISOString(),
+        originalPrompt: state.originalPrompt,
+        levels: state.levels,
+        nodes: state.nodes,
+        edges: state.edges,
+        selectedPath,
+        viewport: state.viewport,
+        metadata: {
+          title: title || `思维导图快照 - ${new Date().toLocaleDateString()}`,
+          description: description || '从ANYPLAN导出的画布快照',
+          nodeCount: state.nodes.length,
+          levelCount: state.levels.length,
+          appVersion: '1.0.0'
+        }
+      };
+
+      // 下载JSON文件
+      const blob = new Blob([JSON.stringify(snapshot, null, 2)], {
+        type: 'application/json'
+      });
+      const filename = createSnapshotFilename(title);
+      downloadFile(blob, filename);
+
+      console.log('✅ Canvas snapshot exported successfully');
+    },
+
+    // 导入画布快照
+    importSnapshot: (snapshot: CanvasSnapshot) => {
+      try {
+        // 验证快照格式
+        if (!snapshot.version || !snapshot.nodes || !snapshot.levels) {
+          throw new Error('Invalid snapshot format');
+        }
+
+        set((state) => {
+          // 清空当前画布
+          state.nodes = [];
+          state.edges = [];
+          state.selectedNodesByLevel = {};
+
+          // 还原数据
+          state.originalPrompt = snapshot.originalPrompt || '';
+          state.levels = snapshot.levels || [];
+          state.nodes = snapshot.nodes || [];
+          state.edges = snapshot.edges || [];
+
+          // 还原视口（如果有）
+          if (snapshot.viewport) {
+            state.viewport = snapshot.viewport;
+          }
+
+          // 还原选中路径
+          if (snapshot.selectedPath) {
+            snapshot.selectedPath.forEach(item => {
+              state.selectedNodesByLevel[item.level] = item.nodeId;
+            });
+          }
+
+          // 重置其他状态
+          state.currentLevel = 1;
+          state.isAIGenerating = false;
+          state.error = null;
+        });
+
+        console.log('✅ Canvas snapshot imported successfully');
+        console.log('📊 Restored:', {
+          nodes: snapshot.nodes.length,
+          levels: snapshot.levels.length,
+          selectedPath: snapshot.selectedPath?.length || 0
+        });
+
+      } catch (error) {
+        console.error('Failed to import snapshot:', error);
+        throw new Error('导入快照失败：' + (error instanceof Error ? error.message : '未知错误'));
       }
     },
   }))

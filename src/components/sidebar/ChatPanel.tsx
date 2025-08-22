@@ -16,6 +16,7 @@ const ChatPanel = () => {
   const [greeting, setGreeting] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [downloadSnapshot, setDownloadSnapshot] = useState(true);
 
   const {
     analyzeUserInput,
@@ -23,7 +24,8 @@ const ChatPanel = () => {
     levels,
     mode,
     getSelectedChainContent,
-    generateReport
+    generateReport,
+    generateReportWithSnapshot
   } = useCanvasStore();
 
   // 根据时间动态设置问候语
@@ -86,7 +88,11 @@ const ChatPanel = () => {
       if (isWritingModeWithChain) {
         // 写作模式下生成报告
         console.log('🔍 Generating report for chain:', chainContent);
-        aiResponse = await generateReport(currentInput || undefined);
+        if (downloadSnapshot) {
+          aiResponse = await generateReportWithSnapshot(currentInput || undefined);
+        } else {
+          aiResponse = await generateReport(currentInput || undefined);
+        }
       } else {
         // 普通模式下分析用户输入
         aiResponse = await analyzeUserInput(currentInput);
@@ -197,8 +203,23 @@ const ChatPanel = () => {
               disabled={isAIGenerating}
             />
             <div className="input-footer">
-              <div className="model-info">
-                <span className="model-name">Gemini 2.0</span>
+              <div className="footer-left">
+                <div className="model-info">
+                  <span className="model-name">Gemini 2.0</span>
+                </div>
+                {mode === 'writing' && getSelectedChainContent().length > 0 && (
+                  <div className="snapshot-option">
+                    <label className="snapshot-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={downloadSnapshot}
+                        onChange={(e) => setDownloadSnapshot(e.target.checked)}
+                      />
+                      <span className="checkmark"></span>
+                      <span className="checkbox-label">同时下载快照</span>
+                    </label>
+                  </div>
+                )}
               </div>
               <div className="input-actions">
                 <button className="action-button" title="附件">
@@ -442,10 +463,14 @@ const ChatPanel = () => {
         .input-footer {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          // margin-top: 12px;
+          align-items: flex-end;
           padding-top: 12px;
-          // border-top: 1px solid #404040;
+        }
+
+        .footer-left {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
         }
 
         .model-info {
@@ -460,6 +485,52 @@ const ChatPanel = () => {
           border-radius: 8px;
           font-size: 12px;
           font-weight: 500;
+        }
+
+        .snapshot-option {
+          display: flex;
+          align-items: center;
+        }
+
+        .snapshot-checkbox {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          cursor: pointer;
+          font-size: 12px;
+          color: #a1a1aa;
+          user-select: none;
+        }
+
+        .snapshot-checkbox input[type="checkbox"] {
+          display: none;
+        }
+
+        .checkmark {
+          width: 14px;
+          height: 14px;
+          border: 1px solid #404040;
+          border-radius: 3px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+
+        .snapshot-checkbox input[type="checkbox"]:checked + .checkmark {
+          background: #65f0a3;
+          border-color: #65f0a3;
+        }
+
+        .snapshot-checkbox input[type="checkbox"]:checked + .checkmark::after {
+          content: '✓';
+          color: #000;
+          font-size: 10px;
+          font-weight: bold;
+        }
+
+        .checkbox-label {
+          font-size: 11px;
         }
 
         .input-actions {
