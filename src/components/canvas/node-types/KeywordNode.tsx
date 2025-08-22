@@ -197,6 +197,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         backgroundColor: isHighlighted ? '#65f0a3' : levelColor,
         boxShadow: isHighlighted ? `0 0 0 2px #65f0a320` : '0 1px 3px rgba(0, 0, 0, 0.3)',
         '--node-bg-color': isHighlighted ? '#65f0a3' : levelColor,
+        // 只在展开时提升z-index，不影响其他功能
+        zIndex: isExpanded ? 999 : 'auto',
       } as React.CSSProperties}
       onClick={handleNodeClick}
       onDoubleClick={handleNodeDoubleClick}
@@ -333,6 +335,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           cursor: pointer;
           display: flex;
           flex-direction: column;
+          /* 展开时增强阴影效果，提升视觉层级 */
+          box-shadow: ${isExpanded ? '0 8px 32px rgba(0, 0, 0, 0.2)' : 'inherit'};
         }
 
         .keyword-node:hover {
