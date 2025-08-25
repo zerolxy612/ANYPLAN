@@ -1,14 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Canvas from '@/components/canvas/Canvas';
 import ChatPanel from '@/components/sidebar/ChatPanel';
-import SnapshotManager from '@/components/canvas/SnapshotManager';
 import { useCanvasStore } from '@/store/canvas.store';
 
 export default function Home() {
   const { mode, setMode } = useCanvasStore();
-  const [showSnapshotManager, setShowSnapshotManager] = useState(false);
 
   return (
     <div className="canvas-page">
@@ -40,26 +38,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 快照管理按钮 */}
-          <div className="snapshot-toggle">
-            <button
-              className={`snapshot-button ${showSnapshotManager ? 'active' : ''}`}
-              onClick={() => setShowSnapshotManager(!showSnapshotManager)}
-            >
-              <span className="snapshot-icon">💾</span>
-              快照管理
-              <span className={`arrow ${showSnapshotManager ? 'up' : 'down'}`}>
-                {showSnapshotManager ? '▲' : '▼'}
-              </span>
-            </button>
-          </div>
 
-          {/* 快照管理面板 */}
-          {showSnapshotManager && (
-            <div className="snapshot-panel">
-              <SnapshotManager />
-            </div>
-          )}
 
           <ChatPanel />
         </div>
@@ -136,63 +115,7 @@ export default function Home() {
           font-size: 16px;
         }
 
-        /* 快照管理样式 */
-        .snapshot-toggle {
-          margin-bottom: 16px;
-        }
 
-        .snapshot-button {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 12px 16px;
-          background: #2a2830;
-          border: 1px solid #404040;
-          border-radius: 8px;
-          color: #ffffff;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .snapshot-button:hover {
-          background: #333;
-          border-color: #555;
-        }
-
-        .snapshot-button.active {
-          background: #65f0a3;
-          color: #000;
-          border-color: #65f0a3;
-        }
-
-        .snapshot-icon {
-          font-size: 16px;
-          margin-right: 8px;
-        }
-
-        .arrow {
-          font-size: 12px;
-          transition: transform 0.2s ease;
-        }
-
-        .snapshot-panel {
-          margin-bottom: 16px;
-          animation: slideDown 0.2s ease-out;
-        }
-
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
       `}</style>
     </div>
   );

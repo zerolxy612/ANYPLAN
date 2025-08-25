@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useCanvasStore } from '@/store/canvas.store';
 import ReportDownloadButtons from '@/components/common/ReportDownloadButtons';
+import { parseSnapshotFile, validateSnapshotFile } from '@/lib/utils/file';
 
 interface Message {
   id: string;
@@ -18,6 +19,10 @@ const ChatPanel = () => {
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [downloadSnapshot, setDownloadSnapshot] = useState(true);
+  const [isImportingSnapshot, setIsImportingSnapshot] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     analyzeUserInput,
@@ -26,7 +31,8 @@ const ChatPanel = () => {
     mode,
     getSelectedChainContent,
     generateReport,
-    generateReportWithSnapshot
+    generateReportWithSnapshot,
+    importSnapshot
   } = useCanvasStore();
 
   // 根据时间动态设置问候语
@@ -124,6 +130,59 @@ const ChatPanel = () => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  // 处理附件按钮点击（快照导入）
+  const handleAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // 处理文件选择
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImportingSnapshot(true);
+    setImportError(null);
+
+    try {
+      // 验证文件
+      if (!validateSnapshotFile(file)) {
+        throw new Error('无效的文件格式。请选择 .json 快照文件');
+      }
+
+      // 解析快照
+      const snapshot = await parseSnapshotFile(file);
+
+      // 导入快照
+      importSnapshot(snapshot);
+
+      // 显示成功消息
+      const successMessage: Message = {
+        id: `system-${Date.now()}`,
+        type: 'ai',
+        content: `✅ 快照导入成功！已还原 ${snapshot.nodes.length} 个节点，${snapshot.levels.length} 个层级`,
+      };
+      setMessages(prev => [...prev, successMessage]);
+
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : '导入失败：未知错误';
+      setImportError(errorMsg);
+
+      // 显示错误消息
+      const errorMessage: Message = {
+        id: `system-${Date.now()}`,
+        type: 'ai',
+        content: `❌ ${errorMsg}`,
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsImportingSnapshot(false);
+      // 清空input值，允许重复选择同一文件
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -227,9 +286,22 @@ const ChatPanel = () => {
                 )}
               </div>
               <div className="input-actions">
-                <button className="action-button" title="附件">
-                  📎
-                </button>
+                <div className="tooltip-container">
+                  <button
+                    className="action-button"
+                    onClick={handleAttachmentClick}
+                    disabled={isImportingSnapshot}
+                    onMouseEnter={() => setShowTooltip(true)}
+                    onMouseLeave={() => setShowTooltip(false)}
+                  >
+                    {isImportingSnapshot ? '⏳' : '📎'}
+                  </button>
+                  {showTooltip && !isImportingSnapshot && (
+                    <div className="custom-tooltip">
+                      上传快照文件 (.json)
+                    </div>
+                  )}
+                </div>
                 <button className="action-button" title="语音">
                   🎤
                 </button>
@@ -242,6 +314,15 @@ const ChatPanel = () => {
                   {isAIGenerating ? '⏳' : '↑'}
                 </button>
               </div>
+
+              {/* 隐藏的文件输入 */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+              />
             </div>
           </div>
         </div>
@@ -254,7 +335,6 @@ const ChatPanel = () => {
           flex: 1;
           display: flex;
           flex-direction: column;
-          gap: 16px;
           min-height: 0; /* 允许flex子元素收缩 */
         }
 
@@ -265,6 +345,7 @@ const ChatPanel = () => {
           flex-direction: column;
           gap: 12px;
           padding: 16px 0;
+          margin-bottom: 16px; /* 与greeting-section的间距 */
           min-height: 0; /* 关键：允许收缩 */
           max-height: calc(100vh - 300px); /* 限制最大高度，为输入栏预留空间 */
         }
@@ -352,8 +433,7 @@ const ChatPanel = () => {
 
         .greeting-section:not(.compact) {
           flex: 1;
-          min-height: 200px; /* 设置最小高度 */
-          max-height: 400px; /* 限制最大高度 */
+          /* 移除高度限制，恢复完全的垂直居中 */
         }
 
         .levels-info {
@@ -454,7 +534,11 @@ const ChatPanel = () => {
         .input-section {
           width: 100%;
           flex-shrink: 0; /* 防止输入区域被挤压 */
-          margin-top: auto; /* 推到底部 */
+        }
+
+        /* 只在紧凑模式下将输入区域推到底部 */
+        .greeting-section.compact .input-section {
+          margin-top: auto;
         }
 
         .input-container {
@@ -559,6 +643,11 @@ const ChatPanel = () => {
           align-items: center;
         }
 
+        .tooltip-container {
+          position: relative;
+          display: inline-block;
+        }
+
         .action-button {
           width: 32px;
           height: 32px;
@@ -577,6 +666,56 @@ const ChatPanel = () => {
         .action-button:hover {
           background-color: #2a2830;
           color: #ffffff;
+        }
+
+        .action-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .action-button:disabled:hover {
+          background-color: transparent;
+          color: #a1a1aa;
+        }
+
+        .custom-tooltip {
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          margin-bottom: 8px;
+          padding: 8px 12px;
+          background-color: #1a1a1c;
+          color: #ffffff;
+          font-size: 12px;
+          font-weight: 500;
+          border-radius: 6px;
+          white-space: nowrap;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          border: 1px solid #404040;
+          z-index: 1000;
+          animation: tooltipFadeIn 0.2s ease-out;
+        }
+
+        .custom-tooltip::after {
+          content: '';
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          border: 5px solid transparent;
+          border-top-color: #1a1a1c;
+        }
+
+        @keyframes tooltipFadeIn {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(4px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
         }
 
         .send-button {
