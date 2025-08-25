@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useCanvasStore } from '@/store/canvas.store';
+import ReportDownloadButtons from '@/components/common/ReportDownloadButtons';
 
 interface Message {
   id: string;
@@ -154,6 +155,10 @@ const ChatPanel = () => {
                   message.content
                 )}
               </div>
+              {/* 如果是Markdown消息（报告），在消息后添加下载按钮 */}
+              {message.isMarkdown && (
+                <ReportDownloadButtons />
+              )}
             </div>
           ))}
           {isAIGenerating && (

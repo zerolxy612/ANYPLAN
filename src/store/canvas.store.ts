@@ -278,6 +278,14 @@ interface CanvasStore {
   loading: LoadingState;
   error: ErrorState | null;
   config: CanvasConfig;
+
+  // 报告数据存储（用于下载按钮）
+  lastGeneratedReport: {
+    content: string;
+    snapshot: CanvasSnapshot;
+    timestamp: number;
+    dateStr: string;
+  } | null;
   
   // 基础操作
   setNodes: (nodes: CanvasNode[]) => void;
@@ -342,6 +350,10 @@ interface CanvasStore {
   // 报告生成
   generateReport: (userInput?: string) => Promise<string>;
   generateReportWithSnapshot: (userInput?: string) => Promise<string>;
+
+  // 手动下载方法
+  downloadMarkdownReport: () => void;
+  downloadSnapshotFile: () => void;
 
   // 画布快照导出导入
   exportSnapshot: (title?: string, description?: string) => void;
@@ -420,6 +432,7 @@ export const useCanvasStore = create<CanvasStore>()(
     loading: defaultLoadingState,
     error: null,
     config: defaultConfig,
+    lastGeneratedReport: null,
 
     // 基础操作
     setNodes: (nodes) => set((state) => {
@@ -1458,7 +1471,7 @@ export const useCanvasStore = create<CanvasStore>()(
       }
     },
 
-    // 生成报告并同时导出快照（伴随文件）
+    // 生成报告并准备快照数据（不自动下载）
     generateReportWithSnapshot: async (userInput?: string) => {
       const state = get();
       const chainContent = state.getSelectedChainContent();
@@ -1482,11 +1495,7 @@ export const useCanvasStore = create<CanvasStore>()(
         const timestamp = Date.now();
         const dateStr = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
 
-        // 1. 下载报告文件（Markdown格式）
-        const reportBlob = new Blob([reportResult.report], { type: 'text/markdown' });
-        downloadFile(reportBlob, `anyplan-report-${dateStr}-${timestamp}.md`);
-
-        // 2. 创建并下载快照文件
+        // 准备快照数据（不自动下载）
         const selectedPath = Object.entries(state.selectedNodesByLevel).map(([level, nodeId]) => ({
           nodeId: nodeId!,
           level: parseInt(level)
@@ -1510,12 +1519,17 @@ export const useCanvasStore = create<CanvasStore>()(
           }
         };
 
-        const snapshotBlob = new Blob([JSON.stringify(snapshot, null, 2)], {
-          type: 'application/json'
+        // 将快照数据存储到state中，供下载按钮使用
+        set((state) => {
+          state.lastGeneratedReport = {
+            content: reportResult.report,
+            snapshot,
+            timestamp,
+            dateStr
+          };
         });
-        downloadFile(snapshotBlob, `anyplan-graph-${dateStr}-${timestamp}.snapshot.json`);
 
-        console.log('✅ Report and snapshot downloaded successfully');
+        console.log('✅ Report generated successfully (ready for download)');
         return reportResult.report;
 
       } catch (error) {
@@ -1526,6 +1540,36 @@ export const useCanvasStore = create<CanvasStore>()(
           state.isAIGenerating = false;
         });
       }
+    },
+
+    // 手动下载Markdown报告
+    downloadMarkdownReport: () => {
+      const state = get();
+      if (!state.lastGeneratedReport) {
+        console.warn('No report available for download');
+        return;
+      }
+
+      const { content, dateStr, timestamp } = state.lastGeneratedReport;
+      const reportBlob = new Blob([content], { type: 'text/markdown' });
+      downloadFile(reportBlob, `anyplan-report-${dateStr}-${timestamp}.md`);
+      console.log('✅ Markdown report downloaded');
+    },
+
+    // 手动下载JSON快照文件
+    downloadSnapshotFile: () => {
+      const state = get();
+      if (!state.lastGeneratedReport) {
+        console.warn('No snapshot available for download');
+        return;
+      }
+
+      const { snapshot, dateStr, timestamp } = state.lastGeneratedReport;
+      const snapshotBlob = new Blob([JSON.stringify(snapshot, null, 2)], {
+        type: 'application/json'
+      });
+      downloadFile(snapshotBlob, `anyplan-graph-${dateStr}-${timestamp}.snapshot.json`);
+      console.log('✅ Snapshot file downloaded');
     },
 
     // 导出画布快照
