@@ -1164,9 +1164,8 @@ export const useCanvasStore = create<CanvasStore>()(
             state.levels[levelIndex].nodeCount += childNodes.length;
           }
 
-          // 更新父节点状态
+          // 更新父节点状态 - 只更新hasChildren，isGenerating在finally中统一处理
           if (state.nodes[parentNodeIndex].data) {
-            state.nodes[parentNodeIndex].data.isGenerating = false;
             state.nodes[parentNodeIndex].data.hasChildren = true;
           }
         });
@@ -1189,6 +1188,11 @@ export const useCanvasStore = create<CanvasStore>()(
       } finally {
         set((state) => {
           state.loading.isGenerating = false;
+          // 重置节点生成状态
+          const nodeIndex = state.nodes.findIndex(n => n.id === nodeId);
+          if (nodeIndex !== -1 && state.nodes[nodeIndex].data) {
+            state.nodes[nodeIndex].data.isGenerating = false;
+          }
         });
       }
     },

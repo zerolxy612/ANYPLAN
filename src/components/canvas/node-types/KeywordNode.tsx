@@ -38,7 +38,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const isExpanded = isNodeExpanded(data.id);
 
   const levelColor = getLevelColor(data.level);
-  const isGenerating = loading.isGenerating;
+  // 使用节点自身的生成状态，而不是全局状态
+  const isGenerating = data.isGenerating || false;
   const isRenewing = loading.renewingNodeId === data.id;
 
   // 直接计算高亮状态，避免useMemo依赖问题
@@ -472,29 +473,64 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.7);
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(4px);
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           border-radius: 8px;
           font-size: 12px;
-          color: #ffffff;
+          color: #374151;
+          font-weight: 500;
+          z-index: 10;
+          transition: all 0.2s ease-in-out;
         }
-        
+
         .loading-spinner {
-          width: 20px;
-          height: 20px;
-          border: 2px solid #e5e7eb;
-          border-top: 2px solid #3b82f6;
+          width: 24px;
+          height: 24px;
+          border: 3px solid #f3f4f6;
+          border-top: 3px solid #10b981;
           border-radius: 50%;
-          animation: spin 1s linear infinite;
+          animation: spin 0.8s linear infinite;
           margin-bottom: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+
+        /* 添加脉冲动画效果 */
+        .loading-overlay::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 60px;
+          height: 60px;
+          border: 2px solid #10b981;
+          border-radius: 50%;
+          opacity: 0.3;
+          transform: translate(-50%, -50%);
+          animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+          0% {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0.7;
+          }
+          50% {
+            transform: translate(-50%, -50%) scale(1.2);
+            opacity: 0.3;
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0.7;
+          }
         }
         
         .node-actions {
