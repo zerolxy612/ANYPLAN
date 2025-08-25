@@ -74,10 +74,27 @@ function CanvasComponent({ className }: CanvasProps) {
   } = useCanvasActions();
 
   // 原始节点操作处理
-  const handleRegenerateOriginal = useCallback(() => {
-    // TODO: 重新生成原始内容和层级框架
-    console.log('重新生成原始内容');
-  }, []);
+  const handleRegenerateOriginal = useCallback(async () => {
+    if (loading.isGenerating || !originalPrompt) return;
+
+    try {
+      console.log('🔄 重新生成原始内容和层级框架');
+
+      // 调用store中的analyzeUserInput方法重新分析
+      const { analyzeUserInput, setNodes, setEdges } = useCanvasStore.getState();
+
+      // 清空当前画布的节点和边
+      setNodes([]);
+      setEdges([]);
+
+      // 重新分析用户输入，生成新的层级框架
+      await analyzeUserInput(originalPrompt);
+
+      console.log('✅ 原始内容重新生成完成');
+    } catch (error) {
+      console.error('❌ 重新生成失败:', error);
+    }
+  }, [loading.isGenerating, originalPrompt]);
 
   const handleGenerateNextLevel = useCallback(() => {
     // TODO: 生成下一层级内容
