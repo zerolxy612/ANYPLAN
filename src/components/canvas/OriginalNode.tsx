@@ -110,14 +110,34 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
         onMouseEnter={(e) => {
           e.currentTarget.style.backgroundColor = '#65f0a3';
           e.currentTarget.style.color = '#000000';
+          // 修改图片滤镜，使其在绿色背景上显示为黑色
+          const img = e.currentTarget.querySelector('img');
+          if (img) {
+            img.style.filter = 'brightness(0)'; // 变为黑色
+          }
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = '#404040';
           e.currentTarget.style.color = '#ffffff';
+          // 恢复图片滤镜，使其显示为白色
+          const img = e.currentTarget.querySelector('img');
+          if (img) {
+            img.style.filter = 'brightness(0) invert(1)'; // 变为白色
+          }
         }}
         title="重新生成"
       >
-        ✨
+        <img
+          src="/restart.png"
+          alt="重新生成"
+          style={{
+            width: '16px',
+            height: '16px',
+            filter: 'brightness(0) invert(1)', // 将图片变为白色
+            transition: 'filter 0.2s ease',
+            pointerEvents: 'none', // 防止图片干扰点击事件
+          }}
+        />
       </button>
 
       {/* 连线 */}
