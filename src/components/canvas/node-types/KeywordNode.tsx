@@ -198,8 +198,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         backgroundColor: isHighlighted ? '#65f0a3' : levelColor,
         boxShadow: isHighlighted ? `0 0 0 2px #65f0a320` : '0 1px 3px rgba(0, 0, 0, 0.3)',
         '--node-bg-color': isHighlighted ? '#65f0a3' : levelColor,
-        // 只在展开时提升z-index，不影响其他功能
-        zIndex: isExpanded ? 999 : 'auto',
+        // 展开时大幅提升z-index，确保在所有元素之上
+        zIndex: isExpanded ? 9999 : 'auto',
       } as React.CSSProperties}
       onClick={handleNodeClick}
       onDoubleClick={handleNodeDoubleClick}
@@ -332,12 +332,12 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           border: 1px solid #e2e8f0;
           background: white;
           position: relative;
-          transition: all 0.2s ease;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.3s ease-out, box-shadow 0.3s ease-out;
           cursor: pointer;
           display: flex;
           flex-direction: column;
           /* 展开时增强阴影效果，提升视觉层级 */
-          box-shadow: ${isExpanded ? '0 8px 32px rgba(0, 0, 0, 0.2)' : 'inherit'};
+          box-shadow: ${isExpanded ? '0 12px 48px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.15)' : 'inherit'};
         }
 
         .keyword-node:hover {
@@ -387,12 +387,14 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           max-height: 98px; /* 约7行文字的高度 (14px * 1.4 * 5 ≈ 98px) */
           overflow: hidden;
           white-space: pre-wrap;
+          transition: max-height 0.3s ease-out;
         }
 
         .content-text.expanded {
-          max-height: none;
+          max-height: 500px; /* 设置一个足够大的值用于动画 */
           overflow: visible;
           white-space: pre-wrap;
+          transition: max-height 0.3s ease-out;
         }
 
         .text-content {

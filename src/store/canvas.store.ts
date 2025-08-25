@@ -129,16 +129,16 @@ const getLevelAreaX = (level: number): number => {
   return l1AreaX + (level - 1) * levelWidth;
 };
 
-// 估算节点高度的函数
+// 估算节点高度的函数 - 优化版本
 const estimateNodeHeight = (content: string, isExpanded: boolean = false): number => {
   const baseHeight = 50; // 最小高度
   const padding = 24; // 上下内边距 (12px * 2)
   const lineHeight = 19.6; // 14px * 1.4
-  const maxWidth = 140; // 文本容器宽度
+  const contentWidth = 140; // 文本容器宽度（与KeywordNode中的contentWidth一致）
 
   if (!isExpanded && content.length <= 30) {
     // 短文本，不需要展开
-    const lines = Math.ceil(content.length / 20); // 粗略估算行数
+    const lines = Math.ceil(content.length / 18); // 更精确的行数估算
     return Math.max(baseHeight, padding + lines * lineHeight);
   }
 
@@ -147,13 +147,18 @@ const estimateNodeHeight = (content: string, isExpanded: boolean = false): numbe
     return Math.max(baseHeight, padding + 98); // 98px是collapsed状态的max-height
   }
 
-  // 展开状态，根据实际内容计算高度
-  const avgCharsPerLine = 20; // 平均每行字符数
-  const lines = Math.ceil(content.length / avgCharsPerLine);
-  const contentHeight = lines * lineHeight;
-  const expandIndicatorHeight = 32; // 展开指示器高度
+  // 展开状态，根据实际内容计算高度 - 更精确的计算
+  const avgCharsPerLine = 16; // 考虑中英文混合，更保守的估算
+  const estimatedLines = Math.ceil(content.length / avgCharsPerLine);
 
-  return Math.max(baseHeight, padding + contentHeight + expandIndicatorHeight);
+  // 考虑换行符的影响
+  const actualLines = Math.max(estimatedLines, content.split('\n').length);
+
+  const contentHeight = actualLines * lineHeight;
+  const expandIndicatorHeight = 40; // 展开指示器和额外间距
+  const extraPadding = 20; // 额外的安全边距
+
+  return Math.max(baseHeight, padding + contentHeight + expandIndicatorHeight + extraPadding);
 };
 
 // 智能计算子节点垂直位置 - 考虑节点实际高度
@@ -172,8 +177,9 @@ const calculateChildVerticalPositions = (
     estimateNodeHeight(content, expandedStates[index] || false)
   );
 
-  // 计算最小间距（确保节点不重叠）
-  const minSpacing = 20; // 节点之间的最小间距
+  // 计算最小间距（确保节点不重叠）- 增加间距以适应展开节点
+  const baseMinSpacing = 30; // 基础最小间距，从20增加到30
+  const expandedNodeExtraSpacing = 20; // 展开节点的额外间距
 
   // 计算总高度和位置
   let totalHeight = 0;
@@ -182,9 +188,15 @@ const calculateChildVerticalPositions = (
   for (let i = 0; i < childCount - 1; i++) {
     const currentNodeHeight = nodeHeights[i];
     const nextNodeHeight = nodeHeights[i + 1];
+    const currentExpanded = expandedStates[i] || false;
+    const nextExpanded = expandedStates[i + 1] || false;
+
+    // 如果有展开节点，增加额外间距
+    const extraSpacing = (currentExpanded || nextExpanded) ? expandedNodeExtraSpacing : 0;
+
     const requiredSpacing = Math.max(
-      minSpacing,
-      (currentNodeHeight + nextNodeHeight) / 2 + minSpacing
+      baseMinSpacing + extraSpacing,
+      (currentNodeHeight + nextNodeHeight) / 2 + baseMinSpacing + extraSpacing
     );
     spacings.push(requiredSpacing);
     totalHeight += requiredSpacing;
