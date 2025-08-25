@@ -18,6 +18,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(data.content);
+  const [hideButtonTimer, setHideButtonTimer] = useState<NodeJS.Timeout | null>(null);
   const {
     generateChildren,
     renewNode,
@@ -121,6 +122,43 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     }
   };
 
+  // 处理鼠标进入节点区域
+  const handleMouseEnter = () => {
+    // 清除隐藏定时器
+    if (hideButtonTimer) {
+      clearTimeout(hideButtonTimer);
+      setHideButtonTimer(null);
+    }
+    setIsHovered(true);
+    setShowActions(true);
+  };
+
+  // 处理鼠标离开节点区域
+  const handleMouseLeave = () => {
+    // 延迟隐藏按钮，给用户时间移动到按钮上
+    const timer = setTimeout(() => {
+      setIsHovered(false);
+      setShowActions(false);
+    }, 200); // 200ms延迟
+    setHideButtonTimer(timer);
+  };
+
+  // 处理鼠标进入按钮区域
+  const handleButtonMouseEnter = () => {
+    // 清除隐藏定时器，保持按钮显示
+    if (hideButtonTimer) {
+      clearTimeout(hideButtonTimer);
+      setHideButtonTimer(null);
+    }
+  };
+
+  // 处理鼠标离开按钮区域
+  const handleButtonMouseLeave = () => {
+    // 立即隐藏按钮
+    setIsHovered(false);
+    setShowActions(false);
+  };
+
   // 右键菜单处理
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -185,6 +223,15 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
       document.removeEventListener('click', handleClickOutside);
     };
   }, [showContextMenu]);
+
+  // 清理定时器
+  React.useEffect(() => {
+    return () => {
+      if (hideButtonTimer) {
+        clearTimeout(hideButtonTimer);
+      }
+    };
+  }, [hideButtonTimer]);
   
   // 统一使用我们的高亮逻辑，忽略React Flow的selected
   const isHighlighted = shouldHighlight || nodeSelected;
@@ -204,14 +251,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
       onClick={handleNodeClick}
       onDoubleClick={handleNodeDoubleClick}
       onContextMenu={handleContextMenu}
-      onMouseEnter={() => {
-        setIsHovered(true);
-        setShowActions(true);
-      }}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        setShowActions(false);
-      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* 节点内容 */}
       <div className="node-content">
@@ -288,6 +329,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
             e.stopPropagation();
             handleGenerateSibling('above');
           }}
+          onMouseEnter={handleButtonMouseEnter}
+          onMouseLeave={handleButtonMouseLeave}
           title="生成同层级节点"
         >
           +
