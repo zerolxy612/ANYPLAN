@@ -250,6 +250,7 @@ const ChatPanel = () => {
           display: flex;
           flex-direction: column;
           gap: 16px;
+          min-height: 0; /* 允许flex子元素收缩 */
         }
 
         .messages-section {
@@ -259,6 +260,8 @@ const ChatPanel = () => {
           flex-direction: column;
           gap: 12px;
           padding: 16px 0;
+          min-height: 0; /* 关键：允许收缩 */
+          max-height: calc(100vh - 300px); /* 限制最大高度，为输入栏预留空间 */
         }
 
         .message {
@@ -280,6 +283,8 @@ const ChatPanel = () => {
           border-radius: 16px;
           font-size: 14px;
           line-height: 1.5;
+          word-wrap: break-word; /* 防止长单词撑破布局 */
+          overflow-wrap: break-word;
         }
 
         .message.user .message-content {
@@ -331,15 +336,19 @@ const ChatPanel = () => {
           justify-content: center;
           align-items: center;
           gap: 32px;
+          flex-shrink: 0; /* 防止被挤压 */
         }
 
         .greeting-section.compact {
           gap: 16px;
           justify-content: flex-end;
+          flex-shrink: 0; /* 防止被挤压 */
         }
 
         .greeting-section:not(.compact) {
           flex: 1;
+          min-height: 200px; /* 设置最小高度 */
+          max-height: 400px; /* 限制最大高度 */
         }
 
         .levels-info {
@@ -362,6 +371,10 @@ const ChatPanel = () => {
         /* Markdown 样式 */
         .markdown-content {
           line-height: 1.6;
+          max-width: 100%;
+          overflow-x: auto; /* 处理水平溢出 */
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         .markdown-h1 {
@@ -435,6 +448,8 @@ const ChatPanel = () => {
 
         .input-section {
           width: 100%;
+          flex-shrink: 0; /* 防止输入区域被挤压 */
+          margin-top: auto; /* 推到底部 */
         }
 
         .input-container {
