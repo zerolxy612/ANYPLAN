@@ -298,7 +298,17 @@ interface CanvasStore {
   levels: AILevel[];
   currentLevel: number;
   originalPrompt: string;
+  mainConcerns: string; // 提取的主要关注点
   isAIGenerating: boolean;
+
+  // Chatbot messages
+  chatMessages: Array<{
+    id: string;
+    type: 'user' | 'ai';
+    content: string;
+    isMarkdown?: boolean;
+  }>;
+  isChatbotGenerating: boolean;
 
   // Mode management
   mode: 'inquiry' | 'writing';
@@ -382,6 +392,7 @@ interface CanvasStore {
   generateChildren: (nodeId: string, context: NodeContext) => Promise<void>;
   renewNode: (nodeId: string, context: NodeContext) => Promise<void>;
   generateInitialNodes: (analysisResult: AIAnalysisResult) => void;
+  generateProgressiveComplaintContent: (currentLevel: number) => Promise<void>;
 
   // 同层级节点生成
   generateSiblingNode: (nodeId: string, position: 'above' | 'below') => Promise<void>;
@@ -397,6 +408,10 @@ interface CanvasStore {
   // 画布快照导出导入
   exportSnapshot: (title?: string, description?: string) => void;
   importSnapshot: (snapshot: CanvasSnapshot) => void;
+
+  // Chatbot消息管理
+  addChatMessage: (message: { type: 'user' | 'ai'; content: string; isMarkdown?: boolean }) => void;
+  clearChatMessages: () => void;
   
   // 版本管理
   saveSnapshot: (name: string, description?: string) => Promise<void>;
@@ -455,7 +470,12 @@ export const useCanvasStore = create<CanvasStore>()(
     levels: [],
     currentLevel: 1,
     originalPrompt: '',
+    mainConcerns: '', // 初始为空
     isAIGenerating: false,
+
+    // Chatbot messages
+    chatMessages: [],
+    isChatbotGenerating: false,
 
     // Mode management
     mode: 'inquiry',
@@ -841,6 +861,11 @@ export const useCanvasStore = create<CanvasStore>()(
         const analysisResult = await analyzeUserInput(userInput, existingLevels);
         console.log('📊 Analysis result:', analysisResult);
 
+        // 同时提取主要关注点
+        console.log('🔍 Extracting main concerns...');
+        const mainConcerns = await geminiService.extractMainConcerns(userInput);
+        console.log('📝 Main concerns extracted:', mainConcerns);
+
         set((state) => {
           // 设置层级信息
           state.levels = analysisResult.levels.map((level: {
@@ -857,8 +882,9 @@ export const useCanvasStore = create<CanvasStore>()(
 
           state.currentLevel = 1;
 
-          // 设置原始提示
+          // 设置原始提示和主要关注点
           state.originalPrompt = analysisResult.originalPrompt;
+          state.mainConcerns = mainConcerns;
         });
 
         // 初始化画布，创建节点
@@ -1244,6 +1270,18 @@ export const useCanvasStore = create<CanvasStore>()(
           if (state.nodes[parentNodeIndex].data) {
             state.nodes[parentNodeIndex].data.hasChildren = true;
           }
+          // 生成渐进式投诉信内容（仅对L1、L2、L3层级）
+          if (childLevel <= 3) {
+            // 异步生成投诉信内容，不阻塞主流程
+            setTimeout(async () => {
+              try {
+                console.log('🔄 Generating progressive complaint content for level:', childLevel);
+                await get().generateProgressiveComplaintContent(childLevel);
+              } catch (complaintError) {
+                console.error('Failed to generate complaint content:', complaintError);
+              }
+            }, 100); // 延迟100ms执行，确保节点已经完全创建
+          }
         });
 
       } catch (error) {
@@ -1269,6 +1307,92 @@ export const useCanvasStore = create<CanvasStore>()(
           if (nodeIndex !== -1 && state.nodes[nodeIndex].data) {
             state.nodes[nodeIndex].data.isGenerating = false;
           }
+        });
+      }
+    },
+
+    // 生成渐进式投诉信内容
+    generateProgressiveComplaintContent: async (currentLevel: number) => {
+      // 设置loading状态
+      set((state) => {
+        state.isChatbotGenerating = true;
+      });
+
+      try {
+        const state = get();
+        const { mainConcerns, nodes } = state;
+
+        if (!mainConcerns) {
+          console.log('No main concerns available, skipping complaint generation');
+          return;
+        }
+
+        // 收集用户在各层级的输入
+        const userInputs: Array<{
+          level: number;
+          question: string;
+          answer: string;
+        }> = [];
+
+        // 遍历所有节点，收集投诉信问题节点的用户输入
+        nodes.forEach(node => {
+          if (node.data.type === 'keyword' &&
+              node.data.level >= 1 &&
+              node.data.level <= 3 &&
+              node.data.questionText &&
+              node.data.userInput) {
+            userInputs.push({
+              level: node.data.level,
+              question: node.data.questionText,
+              answer: node.data.userInput
+            });
+          }
+        });
+
+        if (userInputs.length === 0) {
+          console.log('No user inputs available, skipping complaint generation');
+          return;
+        }
+
+        console.log('Generating progressive complaint with inputs:', userInputs);
+
+        // 调用AI生成投诉信内容
+        const complaintContent = await geminiService.generateProgressiveComplaint(
+          mainConcerns,
+          userInputs,
+          currentLevel
+        );
+
+        console.log('Generated complaint content:', complaintContent);
+
+        // 整体更新chatbot内容，而不是新增
+        set((state) => {
+          // 清空现有消息
+          state.chatMessages = [];
+          // 添加新的完整投诉信内容
+          state.chatMessages.push({
+            id: `complaint-${Date.now()}`,
+            type: 'ai',
+            content: complaintContent,
+            isMarkdown: false
+          });
+        });
+
+      } catch (error) {
+        console.error('Failed to generate progressive complaint content:', error);
+        // 显示错误消息
+        set((state) => {
+          state.chatMessages = [{
+            id: `error-${Date.now()}`,
+            type: 'ai',
+            content: 'Sorry, I encountered an error while generating your complaint letter. Please try again.'
+          }];
+        });
+        throw error;
+      } finally {
+        // 清除loading状态
+        set((state) => {
+          state.isChatbotGenerating = false;
         });
       }
     },
@@ -1724,5 +1848,18 @@ export const useCanvasStore = create<CanvasStore>()(
         throw new Error('导入快照失败：' + (error instanceof Error ? error.message : '未知错误'));
       }
     },
+
+    // Chatbot消息管理
+    addChatMessage: (message) => set((state) => {
+      const newMessage = {
+        id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        ...message
+      };
+      state.chatMessages.push(newMessage);
+    }),
+
+    clearChatMessages: () => set((state) => {
+      state.chatMessages = [];
+    }),
   }))
 );

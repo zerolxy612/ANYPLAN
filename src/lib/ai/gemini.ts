@@ -14,6 +14,8 @@ import {
   ANALYZE_AND_GENERATE_LEVELS_PROMPT,
   EXPAND_NODE_PROMPT,
   GENERATE_REPORT_PROMPT,
+  EXTRACT_MAIN_CONCERNS_PROMPT,
+  GENERATE_PROGRESSIVE_COMPLAINT_PROMPT,
   SYSTEM_PROMPT
 } from './prompts';
 
@@ -161,6 +163,68 @@ class GeminiService {
         throw error;
       }
       throw this.createError('API_ERROR', error instanceof Error ? error.message : 'Node expansion failed');
+    }
+  }
+
+  // 提取主要关注点
+  async extractMainConcerns(userInput: string): Promise<string> {
+    try {
+      if (!userInput.trim()) {
+        throw this.createError('API_ERROR', 'User input cannot be empty');
+      }
+
+      const prompt = EXTRACT_MAIN_CONCERNS_PROMPT(userInput);
+      const response = await this.sendRequest(prompt);
+
+      const mainConcerns = response.trim();
+
+      if (!mainConcerns) {
+        throw new Error('Empty main concerns generated');
+      }
+
+      return mainConcerns;
+    } catch (error) {
+      if (error instanceof Error && 'code' in error) {
+        throw error;
+      }
+      throw this.createError('API_ERROR', error instanceof Error ? error.message : 'Main concerns extraction failed');
+    }
+  }
+
+  // 生成渐进式投诉信内容
+  async generateProgressiveComplaint(
+    mainConcerns: string,
+    userInputs: Array<{
+      level: number;
+      question: string;
+      answer: string;
+    }>,
+    currentLevel: number
+  ): Promise<string> {
+    try {
+      if (!mainConcerns.trim()) {
+        throw this.createError('API_ERROR', 'Main concerns cannot be empty');
+      }
+
+      if (!userInputs || userInputs.length === 0) {
+        throw this.createError('API_ERROR', 'User inputs cannot be empty');
+      }
+
+      const prompt = GENERATE_PROGRESSIVE_COMPLAINT_PROMPT(mainConcerns, userInputs, currentLevel);
+      const response = await this.sendRequest(prompt);
+
+      const complaintContent = response.trim();
+
+      if (!complaintContent) {
+        throw new Error('Empty complaint content generated');
+      }
+
+      return complaintContent;
+    } catch (error) {
+      if (error instanceof Error && 'code' in error) {
+        throw error;
+      }
+      throw this.createError('API_ERROR', error instanceof Error ? error.message : 'Progressive complaint generation failed');
     }
   }
 

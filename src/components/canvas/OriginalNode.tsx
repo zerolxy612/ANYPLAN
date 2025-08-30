@@ -16,7 +16,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
   onGenerateNext,
   viewport
 }) => {
-  const { generateChildren, loading, originalPrompt } = useCanvasStore();
+  const { generateChildren, loading, originalPrompt, mainConcerns } = useCanvasStore();
   const zoom = viewport?.zoom || 1;
   const offsetX = viewport?.x || 0;
   const offsetY = viewport?.y || 0;
@@ -192,7 +192,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
             fontWeight: '500',
           }}
         >
-          Keywords
+          Main Concerns
         </div>
 
         {/* 内容 */}
@@ -210,7 +210,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
             WebkitBoxOrient: 'vertical',
           }}
         >
-          {content}
+          {mainConcerns || content}
         </div>
       </div>
 

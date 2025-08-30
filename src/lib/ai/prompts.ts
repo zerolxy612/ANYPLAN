@@ -60,6 +60,81 @@ Important Constraints:
 `;
 };
 
+// Extract main concerns from user complaint input
+export const EXTRACT_MAIN_CONCERNS_PROMPT = (userInput: string) => `
+**IMPORTANT: ALL OUTPUT MUST BE IN ENGLISH** - Generate all content in English regardless of the input language.
+
+As a complaint letter writing assistant, analyze the user's complaint input and extract the main concerns in a clear, structured format.
+
+User Input: "${userInput}"
+
+Please identify and extract the key concerns from this complaint, focusing on:
+1. The main issue or problem
+2. What went wrong
+3. The impact on the user
+4. What the user expects
+
+Format your response as a concise summary that captures the essence of the complaint in 2-3 sentences. This will be displayed as "Main Concerns" to help the user see the core issues clearly.
+
+Requirements:
+- Write in clear, professional English
+- Focus on the main problems, not minor details
+- Keep it concise but comprehensive
+- Use objective language suitable for a complaint letter
+- Maximum 3 sentences
+- IMPORTANT: Return ONLY the plain text summary, no JSON, no formatting, no quotes
+
+Example format:
+The delivery was delayed far beyond the promised two days. The package was damaged, which raises worries about product safety. You want the company to take responsibility and respond seriously.
+
+**CRITICAL**: Your response must be plain text only, not JSON or any other format.
+**LANGUAGE REQUIREMENT**: Respond entirely in English, regardless of the input language.
+`;
+
+// Generate progressive complaint letter content based on user inputs
+export const GENERATE_PROGRESSIVE_COMPLAINT_PROMPT = (
+  mainConcerns: string,
+  userInputs: Array<{
+    level: number;
+    question: string;
+    answer: string;
+  }>,
+  currentLevel: number
+) => `
+**IMPORTANT: ALL OUTPUT MUST BE IN ENGLISH** - Generate all content in English regardless of the input language.
+
+As a complaint letter writing assistant, help the user build their complaint letter progressively. Based on the information they've provided so far, generate the appropriate section of their complaint letter.
+
+Main Concerns: "${mainConcerns}"
+
+User has provided the following information:
+${userInputs.map(input => `${input.question}: ${input.answer}`).join('\n')}
+
+Current Level: L${currentLevel}
+
+Based on the level, generate the appropriate complaint letter content:
+
+**For L1 (Basic Information)**: Generate an opening paragraph that introduces the complaint with the basic details (time, place, people involved).
+
+**For L2 (Impact Assessment)**: Add content about how the issue affected the user emotionally, the inconvenience/harm caused, and why it's important to them.
+
+**For L3 (Resolution Request)**: Add content about what the user wants the company to do, timeline expectations, and alternative solutions.
+
+Requirements:
+- Write in professional, clear English suitable for a formal complaint letter
+- Use the user's provided information naturally in the text
+- Make it sound personal but professional
+- Keep each section concise but complete
+- Build upon previous sections logically
+- Use appropriate complaint letter tone and structure
+- IMPORTANT: Return ONLY the plain text paragraph, no JSON, no formatting, no quotes
+
+Format your response as a well-structured paragraph that can be part of a formal complaint letter.
+
+**CRITICAL**: Your response must be plain text only, not JSON or any other format.
+**LANGUAGE REQUIREMENT**: Respond entirely in English, regardless of the input language.
+`;
+
 // Node expansion Prompt
 export const EXPAND_NODE_PROMPT = (nodeContent: string, nodeLevel: number, parentContext: string, userPrompt: string) => `
 **CRITICAL: ALL GENERATED CONTENT MUST BE IN ENGLISH** - Generate all node content in English only, regardless of input language.

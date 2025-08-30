@@ -7,17 +7,9 @@ import { useCanvasStore } from '@/store/canvas.store';
 import ReportDownloadButtons from '@/components/common/ReportDownloadButtons';
 import { parseSnapshotFile, validateSnapshotFile } from '@/lib/utils/file';
 
-interface Message {
-  id: string;
-  type: 'user' | 'ai';
-  content: string;
-  isMarkdown?: boolean; // 标识是否需要Markdown渲染
-}
-
 const ChatPanel = () => {
   const [greeting, setGreeting] = useState('');
   const [inputValue, setInputValue] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
   const [downloadSnapshot, setDownloadSnapshot] = useState(true);
   const [isImportingSnapshot, setIsImportingSnapshot] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -32,7 +24,11 @@ const ChatPanel = () => {
     getSelectedChainContent,
     generateReport,
     generateReportWithSnapshot,
-    importSnapshot
+    importSnapshot,
+    chatMessages,
+    addChatMessage,
+    clearChatMessages,
+    isChatbotGenerating
   } = useCanvasStore();
 
   // Dynamically set greeting based on time
@@ -78,12 +74,10 @@ const ChatPanel = () => {
 
     // 如果有用户输入，添加用户消息
     if (inputValue.trim()) {
-      const userMessage = {
-        id: `user-${Date.now()}`,
-        type: 'user' as const,
+      addChatMessage({
+        type: 'user',
         content: inputValue.trim()
-      };
-      setMessages((prev: Message[]) => [...prev, userMessage]);
+      });
     }
 
     const currentInput = inputValue.trim();
@@ -106,22 +100,17 @@ const ChatPanel = () => {
         aiResponse = typeof aiResponse === 'string' ? aiResponse : 'Analysis completed, please check the results on the canvas.';
       }
 
-      const aiMessage: Message = {
-        id: `ai-${Date.now()}`,
-        type: 'ai' as const,
+      addChatMessage({
+        type: 'ai',
         content: aiResponse,
         isMarkdown: isWritingModeWithChain // Report-type messages use Markdown rendering
-      };
-
-      setMessages((prev: Message[]) => [...prev, aiMessage]);
+      });
     } catch (error) {
       console.error('Error in handleSendMessage:', error);
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        type: 'ai' as const,
+      addChatMessage({
+        type: 'ai',
         content: 'Sorry, an error occurred while processing your request. Please try again.'
-      };
-      setMessages((prev: Message[]) => [...prev, errorMessage]);
+      });
     }
   };
 
@@ -159,24 +148,20 @@ const ChatPanel = () => {
       importSnapshot(snapshot);
 
       // Show success message
-      const successMessage: Message = {
-        id: `system-${Date.now()}`,
+      addChatMessage({
         type: 'ai',
         content: `✅ Snapshot imported successfully! Restored ${snapshot.nodes.length} nodes, ${snapshot.levels.length} levels`,
-      };
-      setMessages(prev => [...prev, successMessage]);
+      });
 
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Import failed: Unknown error';
       setImportError(errorMsg);
 
       // Show error message
-      const errorMessage: Message = {
-        id: `system-${Date.now()}`,
+      addChatMessage({
         type: 'ai',
         content: `❌ ${errorMsg}`,
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      });
     } finally {
       setIsImportingSnapshot(false);
       // 清空input值，允许重复选择同一文件
@@ -189,9 +174,9 @@ const ChatPanel = () => {
   return (
     <div className="chat-panel">
       {/* 消息历史 */}
-      {messages.length > 0 && (
+      {(chatMessages.length > 0 || isChatbotGenerating) && (
         <div className="messages-section">
-          {messages.map((message) => (
+          {chatMessages.map((message) => (
             <div key={message.id} className={`message ${message.type}`}>
               <div className={`message-content ${message.isMarkdown ? 'markdown-content' : ''}`}>
                 {message.isMarkdown ? (
@@ -220,7 +205,7 @@ const ChatPanel = () => {
               )}
             </div>
           ))}
-          {isAIGenerating && (
+          {(isAIGenerating || isChatbotGenerating) && (
             <div className="message ai">
               <div className="message-content">
                 <div className="typing-indicator">
@@ -228,6 +213,11 @@ const ChatPanel = () => {
                   <span></span>
                   <span></span>
                 </div>
+                {isChatbotGenerating && (
+                  <span className="loading-text" style={{ marginLeft: '10px', fontSize: '14px', color: '#888' }}>
+                    Generating your complaint letter...
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -235,8 +225,8 @@ const ChatPanel = () => {
       )}
 
       {/* 问候文本或层级信息 */}
-      <div className={`greeting-section ${messages.length > 0 ? 'compact' : ''}`}>
-        {messages.length === 0 ? (
+      <div className={`greeting-section ${chatMessages.length > 0 ? 'compact' : ''}`}>
+        {chatMessages.length === 0 ? (
           <div className="text-block">
             <h2 className="greeting-title">{displayGreeting},</h2>
             <p className="greeting-subtitle">How can I help you?</p>

@@ -19,6 +19,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(data.content);
   const [hideButtonTimer, setHideButtonTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isComposing, setIsComposing] = useState(false); // 中文输入状态
   const {
     generateChildren,
     renewNode,
@@ -289,16 +290,34 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
                   // 防止某些快捷键被画布拦截
                   e.stopPropagation();
                 }}
-                onInput={(e) => {
-                  // 处理输入时的高度调整
+                onCompositionStart={() => {
+                  // 中文输入开始，暂停其他处理
+                  setIsComposing(true);
+                }}
+                onCompositionEnd={(e) => {
+                  // 中文输入结束，调整高度
+                  setIsComposing(false);
                   const target = e.target as HTMLTextAreaElement;
                   target.style.height = 'auto';
                   target.style.height = Math.min(target.scrollHeight, 120) + 'px';
                 }}
+                onInput={(e) => {
+                  // 只在非中文输入时调整高度
+                  if (!isComposing) {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+                  }
+                }}
                 placeholder="Enter your answer..."
                 className="user-input"
                 rows={3}
-                style={{ resize: 'none' }}
+                style={{
+                  resize: 'none',
+                  imeMode: 'auto' // 支持输入法
+                }}
+                autoComplete="off"
+                spellCheck={false}
               />
             </div>
           </div>
