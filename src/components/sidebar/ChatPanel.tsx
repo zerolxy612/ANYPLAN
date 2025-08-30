@@ -35,31 +35,31 @@ const ChatPanel = () => {
     importSnapshot
   } = useCanvasStore();
 
-  // 根据时间动态设置问候语
+  // Dynamically set greeting based on time
   useEffect(() => {
     const updateGreeting = () => {
       const hour = new Date().getHours();
       if (hour < 6) {
-        setGreeting('凌晨好');
+        setGreeting('Good early morning');
       } else if (hour < 12) {
-        setGreeting('上午好');
+        setGreeting('Good morning');
       } else if (hour < 18) {
-        setGreeting('下午好');
+        setGreeting('Good afternoon');
       } else {
-        setGreeting('晚上好');
+        setGreeting('Good evening');
       }
     };
 
-    // 立即设置初始问候语
+    // Set initial greeting immediately
     updateGreeting();
-    // 每分钟更新一次问候语
+    // Update greeting every minute
     const interval = setInterval(updateGreeting, 60000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // 如果greeting为空，设置默认值
-  const displayGreeting = greeting || '下午好';
+  // If greeting is empty, set default value
+  const displayGreeting = greeting || 'Good afternoon';
 
   // 处理用户输入
   const handleSendMessage = async () => {
@@ -101,16 +101,16 @@ const ChatPanel = () => {
           aiResponse = await generateReport(currentInput || undefined);
         }
       } else {
-        // 普通模式下分析用户输入
+        // Normal mode: analyze user input
         aiResponse = await analyzeUserInput(currentInput);
-        aiResponse = typeof aiResponse === 'string' ? aiResponse : '分析完成，请查看画布上的结果。';
+        aiResponse = typeof aiResponse === 'string' ? aiResponse : 'Analysis completed, please check the results on the canvas.';
       }
 
       const aiMessage: Message = {
         id: `ai-${Date.now()}`,
         type: 'ai' as const,
         content: aiResponse,
-        isMarkdown: isWritingModeWithChain // 报告类型的消息使用Markdown渲染
+        isMarkdown: isWritingModeWithChain // Report-type messages use Markdown rendering
       };
 
       setMessages((prev: Message[]) => [...prev, aiMessage]);
@@ -119,7 +119,7 @@ const ChatPanel = () => {
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         type: 'ai' as const,
-        content: '抱歉，处理您的请求时出现了错误，请重试。'
+        content: 'Sorry, an error occurred while processing your request. Please try again.'
       };
       setMessages((prev: Message[]) => [...prev, errorMessage]);
     }
@@ -147,30 +147,30 @@ const ChatPanel = () => {
     setImportError(null);
 
     try {
-      // 验证文件
+      // Validate file
       if (!validateSnapshotFile(file)) {
-        throw new Error('无效的文件格式。请选择 .json 快照文件');
+        throw new Error('Invalid file format. Please select a .json snapshot file');
       }
 
-      // 解析快照
+      // Parse snapshot
       const snapshot = await parseSnapshotFile(file);
 
-      // 导入快照
+      // Import snapshot
       importSnapshot(snapshot);
 
-      // 显示成功消息
+      // Show success message
       const successMessage: Message = {
         id: `system-${Date.now()}`,
         type: 'ai',
-        content: `✅ 快照导入成功！已还原 ${snapshot.nodes.length} 个节点，${snapshot.levels.length} 个层级`,
+        content: `✅ Snapshot imported successfully! Restored ${snapshot.nodes.length} nodes, ${snapshot.levels.length} levels`,
       };
       setMessages(prev => [...prev, successMessage]);
 
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : '导入失败：未知错误';
+      const errorMsg = error instanceof Error ? error.message : 'Import failed: Unknown error';
       setImportError(errorMsg);
 
-      // 显示错误消息
+      // Show error message
       const errorMessage: Message = {
         id: `system-${Date.now()}`,
         type: 'ai',
@@ -238,14 +238,14 @@ const ChatPanel = () => {
       <div className={`greeting-section ${messages.length > 0 ? 'compact' : ''}`}>
         {messages.length === 0 ? (
           <div className="text-block">
-            <h2 className="greeting-title">{displayGreeting}，</h2>
-            <p className="greeting-subtitle">有什么我可以帮你的吗？</p>
+            <h2 className="greeting-title">{displayGreeting},</h2>
+            <p className="greeting-subtitle">How can I help you?</p>
           </div>
         ) : levels.length > 0 && (
           <div className="levels-info">
-            <p className="levels-text">已生成 {levels.length} 个层级的探索框架</p>
+            <p className="levels-text">Generated {levels.length}-level exploration framework</p>
             {mode === 'writing' && getSelectedChainContent().length > 0 && (
-              <p className="chain-status">✅ 已选择 {getSelectedChainContent().length} 层思考链路，可生成分析报告</p>
+              <p className="chain-status">✅ Selected {getSelectedChainContent().length}-level thinking chain, ready to generate analysis report</p>
             )}
           </div>
         )}
@@ -257,8 +257,8 @@ const ChatPanel = () => {
               className="chat-input"
               placeholder={
                 mode === 'writing' && getSelectedChainContent().length > 0
-                  ? "基于您选择的思考链路生成分析报告，或输入补充说明..."
-                  : "请输入您的问题或上传文件"
+                  ? "Generate analysis report based on your selected thinking chain, or enter additional notes..."
+                  : "Please enter your question or upload a file"
               }
               rows={3}
               value={inputValue}
@@ -280,7 +280,7 @@ const ChatPanel = () => {
                         onChange={(e) => setDownloadSnapshot(e.target.checked)}
                       />
                       <span className="checkmark"></span>
-                      <span className="checkbox-label">同时下载快照</span>
+                      <span className="checkbox-label">Download snapshot</span>
                     </label>
                   </div>
                 )}
@@ -298,16 +298,16 @@ const ChatPanel = () => {
                   </button>
                   {showTooltip && !isImportingSnapshot && (
                     <div className="custom-tooltip">
-                      上传快照文件 (.json)
+                      Upload snapshot file (.json)
                     </div>
                   )}
                 </div>
-                <button className="action-button" title="语音">
+                <button className="action-button" title="Voice">
                   🎤
                 </button>
                 <button
                   className={`action-button send-button ${isAIGenerating ? 'disabled' : ''}`}
-                  title="发送"
+                  title="Send"
                   onClick={handleSendMessage}
                   disabled={isAIGenerating || (!inputValue.trim() && !(mode === 'writing' && getSelectedChainContent().length > 0))}
                 >

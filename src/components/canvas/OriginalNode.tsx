@@ -43,7 +43,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
       // 调用外部回调
       onGenerateNext?.();
     } catch (error) {
-      console.error('生成下一层级失败:', error);
+      console.error('Failed to generate next level:', error);
     }
   };
 
@@ -125,11 +125,11 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
             img.style.filter = 'brightness(0) invert(1)'; // 变为白色
           }
         }}
-        title="重新生成"
+        title="Regenerate"
       >
         <img
           src="/restart.png"
-          alt="重新生成"
+          alt="Regenerate"
           style={{
             width: '16px',
             height: '16px',
@@ -192,7 +192,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
             fontWeight: '500',
           }}
         >
-          关键词
+          Keywords
         </div>
 
         {/* 内容 */}
@@ -251,7 +251,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
           e.currentTarget.style.transform = 'scale(1)';
           e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
         }}
-        title="生成下一层级"
+        title="Generate next level"
       >
         ›
       </button>

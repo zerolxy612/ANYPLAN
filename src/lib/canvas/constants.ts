@@ -168,21 +168,21 @@ export const ANIMATIONS = {
   PULSE: 'pulse',
 } as const;
 
-// 错误消息
+// Error messages
 export const ERROR_MESSAGES = {
-  GENERATION_FAILED: '生成失败，请重试',
-  NETWORK_ERROR: '网络连接错误',
-  STORAGE_ERROR: '存储失败',
-  VALIDATION_ERROR: '数据验证失败',
-  UNKNOWN_ERROR: '未知错误',
+  GENERATION_FAILED: 'Generation failed, please try again',
+  NETWORK_ERROR: 'Network connection error',
+  STORAGE_ERROR: 'Storage failed',
+  VALIDATION_ERROR: 'Data validation failed',
+  UNKNOWN_ERROR: 'Unknown error',
 } as const;
 
-// 成功消息
+// Success messages
 export const SUCCESS_MESSAGES = {
-  GENERATION_SUCCESS: '生成成功',
-  SAVE_SUCCESS: '保存成功',
-  LOAD_SUCCESS: '加载成功',
-  DELETE_SUCCESS: '删除成功',
+  GENERATION_SUCCESS: 'Generation successful',
+  SAVE_SUCCESS: 'Save successful',
+  LOAD_SUCCESS: 'Load successful',
+  DELETE_SUCCESS: 'Delete successful',
 } as const;
 
 // API 端点

@@ -78,7 +78,7 @@ function CanvasComponent({ className }: CanvasProps) {
     if (loading.isGenerating || !originalPrompt) return;
 
     try {
-      console.log('🔄 重新生成原始内容和层级框架');
+      console.log('🔄 Regenerating original content and level framework');
 
       // 调用store中的analyzeUserInput方法重新分析
       const { analyzeUserInput, setNodes, setEdges } = useCanvasStore.getState();
@@ -90,15 +90,15 @@ function CanvasComponent({ className }: CanvasProps) {
       // 重新分析用户输入，生成新的层级框架
       await analyzeUserInput(originalPrompt);
 
-      console.log('✅ 原始内容重新生成完成');
+      console.log('✅ Original content regeneration completed');
     } catch (error) {
-      console.error('❌ 重新生成失败:', error);
+      console.error('❌ Regeneration failed:', error);
     }
   }, [loading.isGenerating, originalPrompt]);
 
   const handleGenerateNextLevel = useCallback(() => {
     // TODO: 生成下一层级内容
-    console.log('生成下一层级内容');
+    console.log('Generate next level content');
   }, []);
 
 
@@ -150,7 +150,7 @@ function CanvasComponent({ className }: CanvasProps) {
             x: event.clientX - rect.left,
             y: event.clientY - rect.top,
           };
-          addNode('新节点', 1, undefined, position);
+          addNode('New node', 1, undefined, position);
         }
       }
     },
@@ -315,7 +315,7 @@ function CanvasComponent({ className }: CanvasProps) {
           <Panel position="top-center" className="loading-panel">
             <div className="loading-content">
               <div className="loading-spinner" />
-              <span>正在生成...</span>
+              <span>Generating...</span>
             </div>
           </Panel>
         )}

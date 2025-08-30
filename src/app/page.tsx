@@ -26,14 +26,14 @@ export default function Home() {
                 onClick={() => setMode('inquiry')}
               >
                 <span className="mode-icon">🔍</span>
-                询问模式
+                Inquiry Mode
               </button>
               <button
                 className={`mode-button ${mode === 'writing' ? 'active' : ''}`}
                 onClick={() => setMode('writing')}
               >
                 <span className="mode-icon">✍️</span>
-                写作模式
+                Writing Mode
               </button>
             </div>
           </div>

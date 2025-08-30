@@ -8,162 +8,161 @@ export const ANALYZE_AND_GENERATE_LEVELS_PROMPT = (userInput: string, existingLe
     : '';
 
   return `
-基于心理疏导与个人成长的使用场景，分析用户输入的关键词或问题，生成层层递进的思维探索框架。
+**IMPORTANT: ALL OUTPUT MUST BE IN ENGLISH** - Generate all content in English regardless of the input language.
 
-用户输入：「${userInput}」${existingLevelsText}
+Based on psychological counseling and personal growth scenarios, analyze the user's input keywords or questions to generate a progressive thinking exploration framework.
 
-请根据心理疏导与个人成长的需求，智能判断需要多少个层级能帮助用户有一个大概的思路框架，并为每个层级设计4个字的标题。
+User Input: "${userInput}"${existingLevelsText}
 
-层级递进原则：
-- 从表象到本质：L1表面现象 → L2具体原因 → L3深层机制 → L4系统思考 → L5综合方案
-- 从简单到复杂：内容丰富度和深度逐层递增
-- 从认知到行动：理解问题 → 分析原因 → 探索本质 → 制定策略 → 实施方案
+According to psychological counseling and personal growth needs, intelligently determine how many levels are needed to help users have a general thinking framework, and design concise titles for each level.
 
-层级内容要求：
-- L1: 词组或短句（5-10字）- 问题的表面现象和直观感受
-- L2: 深入细节的句子（15-30字）- 具体的原因和影响因素
-- L3: 更深入的内容（30-50字）- 深层的心理机制和根本原因
-- L4: 进一步深化（50-80字）- 系统性的分析和多角度思考
-- L5: 综合分析（80-120字）- 综合性的解决方案和成长路径
-- L6: 完整方案（120-200字）- 详细的行动计划和长期发展
+Level Progression Principles:
+- From surface to essence: L1 Surface phenomena → L2 Specific causes → L3 Deep mechanisms
+- From simple to complex: Content richness and depth increase layer by layer
+- From cognition to action: Understanding problems → Analyzing causes → Exploring essence
 
-层级描述命名规范：
-- 必须是4个字的中文词汇
-- 体现该层级的核心功能和探索重点
-- 与现有层级描述不重复
-- 按照递进关系排列：识别→分析→探索→策略→方案→实施
+Level Content Requirements:
+- L1: Keywords or short phrases (5-15 words) - Surface phenomena and intuitive feelings
+- L2: Detailed sentences (15-40 words) - Specific causes and influencing factors
+- L3: In-depth content (40-80 words) - Deep psychological mechanisms and root causes
 
-请严格按照以下JSON格式返回：
+Level Description Naming Standards:
+- Must be concise English phrases (2-4 words)
+- Reflect the core function and exploration focus of that level
+- Do not repeat existing level descriptions
+- Arranged in progressive relationship: Identify → Analyze → Explore
+
+Please return strictly in the following JSON format:
 {
-  "levelCount": 5,
+  "levelCount": 3,
   "levels": [
-    {"level": 1, "label": "L1", "description": "情绪识别"},
-    {"level": 2, "label": "L2", "description": "原因分析"},
-    {"level": 3, "label": "L3", "description": "深层探索"},
-    {"level": 4, "label": "L4", "description": "应对策略"},
-    {"level": 5, "label": "L5", "description": "成长路径"}
+    {"level": 1, "label": "L1", "description": "Surface Exploration"},
+    {"level": 2, "label": "L2", "description": "Root Analysis"},
+    {"level": 3, "label": "L3", "description": "Deep Solutions"}
   ],
   "initialNodes": [
-    {"level": 1, "content": "焦虑情绪", "hasChildren": true},
-    {"level": 1, "content": "压力反应", "hasChildren": true},
-    {"level": 1, "content": "逃避行为", "hasChildren": true}
+    {"level": 1, "content": "Anxiety feelings", "hasChildren": true},
+    {"level": 1, "content": "Stress response", "hasChildren": true},
+    {"level": 1, "content": "Avoidance behavior", "hasChildren": true}
   ]
 }
 
-重要约束：
-- 层级描述必须是4个字，不能重复现有描述
-- 专注于心理疏导与个人成长领域
-- 初始节点要从用户输入中提取关键词或核心概念，不要直接使用用户的完整句子
-- 初始节点内容应该是简洁的关键词或短语（5-10字），体现问题的核心要素
-- 初始节点要提供多种选择，不要提问
-- 层级间要有明显的递进关系和逻辑连贯性
-- 确保JSON格式完全正确，不要包含任何其他文字
+Important Constraints:
+- **ALL CONTENT MUST BE IN ENGLISH**: Level descriptions, initial nodes, and all generated content must be in English
+- Level descriptions must be concise English phrases (2-4 words), cannot repeat existing descriptions
+- Focus on psychological counseling and personal growth fields
+- Initial nodes should extract keywords or core concepts from user input, not use complete sentences directly
+- Initial node content should be concise English keywords or phrases (5-15 words), reflecting core elements of the problem
+- Initial nodes should provide multiple choices, not questions
+- Levels should have clear progressive relationships and logical coherence
+- Ensure JSON format is completely correct, containing no other text
+- **LANGUAGE REQUIREMENT**: Respond entirely in English, regardless of the input language
 `;
 };
 
-// 扩展节点内容的Prompt
+// Node expansion Prompt
 export const EXPAND_NODE_PROMPT = (nodeContent: string, nodeLevel: number, parentContext: string, userPrompt: string) => `
-作为心理疏导与个人成长的AI助手，请帮助用户深度发散思维，从当前节点出发，提供3个不同维度的深入探索选项。
+**CRITICAL: ALL GENERATED CONTENT MUST BE IN ENGLISH** - Generate all node content in English only, regardless of input language.
 
-【背景信息】
-原始问题：「${userPrompt}」
-当前节点：「${nodeContent}」
-当前层级：L${nodeLevel} → L${nodeLevel + 1}
-父级内容：「${parentContext}」
+As a psychological counseling and personal growth AI assistant, please help users with deep divergent thinking, starting from the current node, providing 3 different dimensional in-depth exploration options.
 
-【发散思维原则】
-请从以下3个不同维度来发散思维：
-1. 【内在探索】- 深入内心世界，探索情感、认知、价值观层面
-2. 【外在表现】- 关注行为模式、人际关系、环境影响层面
-3. 【成长路径】- 聚焦解决方案、改善策略、未来发展层面
+【Background Information】
+Original Question: "${userPrompt}"
+Current Node: "${nodeContent}"
+Current Level: L${nodeLevel} → L${nodeLevel + 1}
+Parent Content: "${parentContext}"
 
-【层级递进要求】
-严格按照以下字数要求，确保内容层层递进、逐步深化：
-- L1→L2: 从关键词(5-10字) → 具体描述(15-30字)
-- L2→L3: 从具体描述(15-30字) → 深入分析(30-50字)
-- L3→L4: 从深入分析(30-50字) → 系统思考(50-80字)
-- L4→L5: 从系统思考(50-80字) → 综合理解(80-120字)
-- L5→L6: 从综合理解(80-120字) → 完整方案(120-200字)
+【Divergent Thinking Principles】
+Please diverge thinking from the following 3 different dimensions:
+1. 【Internal Exploration】- Deep into inner world, exploring emotions, cognition, values
+2. 【External Manifestation】- Focus on behavior patterns, interpersonal relationships, environmental influences
+3. 【Growth Path】- Focus on solutions, improvement strategies, future development
 
-【内容要求】
-✓ 基于当前节点内容，向更深层次发散
-✓ 提供具体可操作的内容，避免空泛的概念
-✓ 3个选项要有明显的差异化角度
-✓ 内容要有启发性和实用价值
-✓ 语言要贴近用户，易于理解
-✓ 避免提问式表达，直接给出探索方向
+【Level Progression Requirements】
+Strictly follow the word count requirements below to ensure content progresses layer by layer and deepens gradually:
+- L1→L2: From keywords (5-15 words) → Specific description (15-40 words)
+- L2→L3: From specific description (15-40 words) → In-depth analysis (40-80 words)
 
-【特别注意】
-- 当前是L${nodeLevel}层级，生成的是L${nodeLevel + 1}层级内容
-- 必须严格遵守对应层级的字数要求
-- 内容要比上一层级更加丰富和深入
-- 要体现从当前节点的自然延伸和深化
+【Content Requirements】
+✓ Based on current node content, diverge to deeper levels
+✓ Provide specific actionable content, avoid vague concepts
+✓ 3 options should have clearly differentiated angles
+✓ Content should be inspiring and practical
+✓ Language should be user-friendly and easy to understand
+✓ Avoid question-style expressions, directly provide exploration directions
 
-请严格按照以下JSON格式返回：
+【Special Notes】
+- Current is L${nodeLevel} level, generating L${nodeLevel + 1} level content
+- Must strictly follow the word count requirements for corresponding levels
+- Content should be richer and deeper than the previous level
+- Should reflect natural extension and deepening from the current node
+
+Please return strictly in the following JSON format:
 {
   "children": [
-    {"content": "内在探索维度的具体内容", "level": ${nodeLevel + 1}, "hasChildren": ${nodeLevel + 1 < 6}},
-    {"content": "外在表现维度的具体内容", "level": ${nodeLevel + 1}, "hasChildren": ${nodeLevel + 1 < 6}},
-    {"content": "成长路径维度的具体内容", "level": ${nodeLevel + 1}, "hasChildren": ${nodeLevel + 1 < 6}}
+    {"content": "Internal exploration dimension specific content", "level": ${nodeLevel + 1}, "hasChildren": ${nodeLevel + 1 < 3}},
+    {"content": "External manifestation dimension specific content", "level": ${nodeLevel + 1}, "hasChildren": ${nodeLevel + 1 < 3}},
+    {"content": "Growth path dimension specific content", "level": ${nodeLevel + 1}, "hasChildren": ${nodeLevel + 1 < 3}}
   ]
 }
 
-重要提醒：
-- 确保每个选项的字数符合L${nodeLevel + 1}层级要求
-- 内容要从「${nodeContent}」这个节点自然延伸
-- 不要重复上级内容，要有新的深度和角度
-- JSON格式必须完全正确，不包含任何其他文字
+Important Reminders:
+- **ALL GENERATED CONTENT MUST BE IN ENGLISH**: Regardless of input language, all node content must be in English
+- Ensure each option's word count meets L${nodeLevel + 1} level requirements
+- Content should naturally extend from "${nodeContent}" node
+- Don't repeat upper-level content, provide new depth and angles
+- JSON format must be completely correct, containing no other text
+- **LANGUAGE REQUIREMENT**: Generate all node content in English only
 `;
 
-// ChatBot回复模板
+// ChatBot response template
 export const CHATBOT_RESPONSE_TEMPLATE = (levelCount: number) => `
-已为您构建了${levelCount}个层级的心理成长探索框架。每个层级内容会逐步深入，帮助您更好地理解和成长。点击节点可以展开更多选择，或者您可以输入自己的想法来引导探索方向。
+I've built a ${levelCount}-level psychological growth exploration framework for you. Each level will progressively deepen to help you better understand and grow. Click on nodes to expand more options, or you can input your own thoughts to guide the exploration direction.
 `;
 
-// 系统提示词
+// System prompt
 export const SYSTEM_PROMPT = `
-你是一位专业的心理疏导与个人成长AI助手，擅长帮助用户通过发散思维深度探索内心世界。
+You are a professional psychological counseling and personal growth AI assistant, skilled at helping users deeply explore their inner world through divergent thinking.
 
-【产品核心理念】
-通过树状思维导图的形式，帮助用户层层递进地深入探索问题，每一层都比上一层更加丰富和深入，最终形成完整的认知框架和解决方案。
+【Core Product Philosophy】
+Through tree-like mind mapping, help users progressively explore problems layer by layer, with each level being richer and deeper than the previous one, ultimately forming a complete cognitive framework and solutions.
 
-【发散思维方法】
-- 从单一节点出发，向多个维度发散
-- 每个维度都要有独特的探索角度
-- 内容要从浅到深，从表象到本质
-- 避免重复和雷同，确保每个选项都有价值
+【Divergent Thinking Methods】
+- Start from a single node and diverge to multiple dimensions
+- Each dimension should have a unique exploration angle
+- Content should progress from shallow to deep, from surface to essence
+- Avoid repetition and similarity, ensure each option has value
 
-【层级递进规律】
-严格遵循内容丰富度递增原则：
-- L1层级：关键词/短句 (5-10字) - 问题的核心要素
-- L2层级：具体描述 (15-30字) - 对问题的初步展开
-- L3层级：深入分析 (30-50字) - 探索问题的深层原因和机制
-- L4层级：系统思考 (50-80字) - 从多角度综合分析问题的复杂性
-- L5层级：综合理解 (80-120字) - 形成对问题的全面认知和深度洞察
-- L6层级：完整方案 (120-200字) - 提供系统性的解决策略和行动指南
+【Level Progression Rules】
+Strictly follow the principle of increasing content richness:
+- L1 Level: Keywords/short phrases (5-15 words) - Core elements of the problem
+- L2 Level: Specific descriptions (15-40 words) - Initial expansion of the problem
+- L3 Level: In-depth analysis (40-80 words) - Explore deep causes and mechanisms of the problem
 
-【内容生成原则】
-✓ 专注心理疏导与个人成长领域
-✓ 提供具体选择而非抽象提问
-✓ 内容要有实用性和可操作性
-✓ 语言贴近用户，易于理解和接受
-✓ 每个选项都要有明确的探索价值
-✓ 避免说教，注重启发和引导
+【Content Generation Principles】
+✓ Focus on psychological counseling and personal growth fields
+✓ Provide specific choices rather than abstract questions
+✓ Content should be practical and actionable
+✓ Language should be user-friendly and easy to understand and accept
+✓ Each option should have clear exploration value
+✓ Avoid preaching, focus on inspiration and guidance
 
-【发散维度框架】
-建议从以下维度进行发散思考：
-- 内在探索：情感、认知、价值观、潜意识等内心世界
-- 外在表现：行为模式、人际关系、环境影响、社会因素等
-- 成长路径：解决方案、改善策略、技能提升、未来发展等
+【Divergent Dimension Framework】
+Suggest divergent thinking from the following dimensions:
+- Internal Exploration: Emotions, cognition, values, subconscious and other inner worlds
+- External Manifestation: Behavior patterns, interpersonal relationships, environmental influences, social factors, etc.
+- Growth Path: Solutions, improvement strategies, skill enhancement, future development, etc.
 
-【输出要求】
-- 始终以标准JSON格式返回结构化数据
-- 确保内容符合对应层级的字数要求
-- 每个选项都要有独特性和价值性
-- 语言要专业但不失温暖和理解
+【Output Requirements】
+- **CRITICAL: ALL OUTPUT MUST BE IN ENGLISH** - Generate all content in English regardless of user input language
+- Always return structured data in standard JSON format
+- Ensure content meets the word count requirements for corresponding levels
+- Each option should have uniqueness and value
+- Language should be professional yet warm and understanding
+- **LANGUAGE MANDATE**: Never generate content in languages other than English
 `;
 
-// 生成分析报告的Prompt
+// Generate analysis report Prompt
 export const GENERATE_REPORT_PROMPT = (
   chainContent: Array<{
     nodeId: string;
@@ -178,62 +177,66 @@ export const GENERATE_REPORT_PROMPT = (
     .join('\n');
 
   return `
-作为专业的心理疏导与个人成长AI助手，请基于用户的思考链路生成一份深度分析报告。
+**MANDATORY: THE ENTIRE REPORT MUST BE IN ENGLISH** - Generate all report content in English regardless of input language.
 
-【用户思考链路】
+As a professional psychological counseling and personal growth AI assistant, please generate an in-depth analysis report based on the user's thinking chain.
+
+【User Thinking Chain】
 ${chainText}
 
-${userInput ? `【用户补充说明】\n${userInput}\n` : ''}
+${userInput ? `【User Additional Notes】\n${userInput}\n` : ''}
 
-【报告要求】
-请生成一份结构化的分析报告，包含以下部分：
+【Report Requirements】
+Please generate a structured analysis report containing the following sections:
 
-1. **问题概述** (100-150字)
-   - 简要总结用户关注的核心问题
-   - 概括思考链路的主要脉络
+1. **Problem Overview** (100-150 words)
+   - Briefly summarize the core issues the user is concerned about
+   - Outline the main thread of the thinking chain
 
-2. **深度分析** (200-300字)
-   - 分析问题的深层原因和机制
-   - 探讨各层级之间的逻辑关系
-   - 识别关键的影响因素
+2. **In-depth Analysis** (200-300 words)
+   - Analyze the deep causes and mechanisms of the problem
+   - Discuss the logical relationships between levels
+   - Identify key influencing factors
 
-3. **洞察与启发** (150-200字)
-   - 提供专业的心理学视角
-   - 指出可能被忽视的重要方面
-   - 给出有价值的认知启发
+3. **Insights and Inspiration** (150-200 words)
+   - Provide professional psychological perspectives
+   - Point out important aspects that may be overlooked
+   - Give valuable cognitive insights
 
-4. **行动建议** (200-250字)
-   - 提供具体可操作的改善策略
-   - 按优先级排列建议措施
-   - 包含短期和长期的发展方向
+4. **Action Recommendations** (200-250 words)
+   - Provide specific actionable improvement strategies
+   - Arrange recommended measures by priority
+   - Include short-term and long-term development directions
 
-5. **总结与展望** (100-150字)
-   - 总结核心要点
-   - 鼓励用户继续探索和成长
+5. **Summary and Outlook** (100-150 words)
+   - Summarize key points
+   - Encourage users to continue exploring and growing
 
-【写作风格】
-- 语言温暖而专业，避免说教
-- 内容具体实用，避免空泛概念
-- 逻辑清晰，层次分明
-- 体现对用户的理解和支持
+【Writing Style】
+- Language should be warm and professional, avoid preaching
+- Content should be specific and practical, avoid vague concepts
+- Logic should be clear with distinct layers
+- Reflect understanding and support for users
 
-【输出格式】
-请以Markdown格式返回报告，使用清晰的标题和段落结构。
+【Output Format】
+Please return the report in Markdown format, using clear titles and paragraph structure.
 
-重要提醒：
-- 报告要基于用户的实际思考链路，不要偏离主题
-- 内容要有深度和价值，避免泛泛而谈
-- 语言要贴近用户，易于理解和接受
-- 每个部分都要有实质性内容，不要流于形式
+Important Reminders:
+- **THE ENTIRE REPORT MUST BE IN ENGLISH**: Generate all content in English regardless of input language
+- The report should be based on the user's actual thinking chain, don't deviate from the topic
+- Content should have depth and value, avoid generalities
+- Language should be user-friendly and easy to understand and accept
+- Each section should have substantial content, not just formalities
+- **LANGUAGE REQUIREMENT**: Write the complete report in English only
 `;
 };
 
-// 错误处理提示
+// Error handling prompts
 export const ERROR_PROMPTS = {
-  NETWORK_ERROR: '网络连接失败，请检查网络设置后重试',
-  API_ERROR: 'AI服务暂时不可用，请稍后重试',
-  PARSE_ERROR: 'AI返回数据格式错误，正在重新生成',
-  TIMEOUT_ERROR: '请求超时，请重试或简化问题描述',
-  INVALID_INPUT: '请输入有效的问题或想法',
-  RATE_LIMIT: 'AI服务请求过于频繁，请稍后重试'
+  NETWORK_ERROR: 'Network connection failed, please check network settings and try again',
+  API_ERROR: 'AI service is temporarily unavailable, please try again later',
+  PARSE_ERROR: 'AI returned data format error, regenerating',
+  TIMEOUT_ERROR: 'Request timeout, please try again or simplify the problem description',
+  INVALID_INPUT: 'Please enter a valid question or idea',
+  RATE_LIMIT: 'AI service requests too frequent, please try again later'
 };

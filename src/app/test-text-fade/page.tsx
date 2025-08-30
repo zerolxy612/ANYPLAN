@@ -53,7 +53,7 @@ const TestTextFadePage = () => {
   const shortTextNode: KeywordNodeData = {
     id: 'test-short',
     type: 'keyword',
-    content: '短文本测试',
+    content: 'Short text test',
     level: 1,
     canExpand: true,
     hasChildren: true,
@@ -64,7 +64,7 @@ const TestTextFadePage = () => {
   const mediumTextNode: KeywordNodeData = {
     id: 'test-medium',
     type: 'keyword',
-    content: '这是一个中等长度的文本测试，用来验证文本展示效果是否正常工作，应该会显示渐变模糊效果。',
+    content: 'This is a medium-length text test to verify that the text display effect works properly and should show gradient blur effect.',
     level: 2,
     canExpand: true,
     hasChildren: true,
@@ -75,7 +75,7 @@ const TestTextFadePage = () => {
   const longTextNode: KeywordNodeData = {
     id: 'test-long',
     type: 'keyword',
-    content: '你的拖延行为实际上是一种心理防御机制，通过延迟行动来保护自我价值感。当面对重要任务时，内心深处害怕全力以赴后仍然失败，这会直接威胁到对自己能力的认知。拖延让你可以在失败时找到借口："如果我有足够时间肯定能做好"，这样就避免了承认能力不足的痛苦。这种模式虽然暂时保护了自尊，但长期来看会阻碍个人成长和目标实现。',
+    content: 'Your procrastination behavior is actually a psychological defense mechanism that protects self-worth by delaying action. When facing important tasks, deep down you fear that even after giving your all, you might still fail, which would directly threaten your perception of your own abilities. Procrastination allows you to find excuses when you fail: "If I had enough time, I could definitely do it well," thus avoiding the pain of admitting inadequate ability. While this pattern temporarily protects self-esteem, in the long run it hinders personal growth and goal achievement.',
     level: 3,
     canExpand: true,
     hasChildren: true,
@@ -86,7 +86,7 @@ const TestTextFadePage = () => {
   const veryLongTextNode: KeywordNodeData = {
     id: 'test-very-long',
     type: 'keyword',
-    content: '自我价值保护机制是一个复杂的心理现象，它涉及多个层面的认知和情感过程。首先，这种机制源于我们对失败的恐惧和对成功的渴望之间的矛盾。当我们面临重要任务或挑战时，内心会产生两种相互冲突的力量：一方面渴望成功和认可，另一方面又害怕失败带来的羞耻感和自我价值的贬低。拖延行为正是在这种心理冲突中产生的一种妥协策略。通过推迟行动，我们暂时避免了直面可能的失败，同时也为自己保留了"如果认真做就能成功"的幻想。这种机制在短期内确实能够缓解焦虑和压力，但长期来看，它会形成一个恶性循环：越是拖延，越是积累焦虑；越是焦虑，越是倾向于继续拖延。最终，这种模式不仅阻碍了我们实现目标，还会逐渐侵蚀我们的自信心和自我效能感。',
+    content: 'The self-worth protection mechanism is a complex psychological phenomenon involving multiple levels of cognitive and emotional processes. First, this mechanism stems from the contradiction between our fear of failure and desire for success. When we face important tasks or challenges, our hearts generate two conflicting forces: on one hand, we crave success and recognition, while on the other hand, we fear the shame and devaluation of self-worth that failure brings. Procrastination behavior is precisely a compromise strategy that emerges from this psychological conflict. By postponing action, we temporarily avoid facing possible failure while preserving the illusion that "if I did it seriously, I could succeed." While this mechanism can indeed alleviate anxiety and pressure in the short term, in the long run, it forms a vicious cycle: the more we procrastinate, the more anxiety accumulates; the more anxious we become, the more we tend to continue procrastinating. Ultimately, this pattern not only hinders us from achieving our goals but also gradually erodes our confidence and self-efficacy.',
     level: 4,
     canExpand: true,
     hasChildren: true,
@@ -104,40 +104,40 @@ const TestTextFadePage = () => {
       gap: '40px',
       alignItems: 'center'
     }}>
-      <h1 style={{ color: '#fff', marginBottom: '20px' }}>文本渐变模糊效果测试</h1>
+      <h1 style={{ color: '#fff', marginBottom: '20px' }}>Text Gradient Blur Effect Test</h1>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', alignItems: 'center' }}>
         <div>
-          <h3 style={{ color: '#ccc', marginBottom: '10px' }}>短文本（不应显示渐变效果）</h3>
+          <h3 style={{ color: '#ccc', marginBottom: '10px' }}>Short text (should not show gradient effect)</h3>
           <TestKeywordNode data={shortTextNode} selected={false} />
         </div>
 
         <div>
-          <h3 style={{ color: '#ccc', marginBottom: '10px' }}>中等文本（可能显示渐变效果）</h3>
+          <h3 style={{ color: '#ccc', marginBottom: '10px' }}>Medium text (may show gradient effect)</h3>
           <TestKeywordNode data={mediumTextNode} selected={false} />
         </div>
 
         <div>
-          <h3 style={{ color: '#ccc', marginBottom: '10px' }}>长文本（应显示渐变效果）</h3>
+          <h3 style={{ color: '#ccc', marginBottom: '10px' }}>Long text (should show gradient effect)</h3>
           <TestKeywordNode data={longTextNode} selected={false} />
         </div>
 
         <div>
-          <h3 style={{ color: '#ccc', marginBottom: '10px' }}>超长文本（应显示渐变效果）</h3>
+          <h3 style={{ color: '#ccc', marginBottom: '10px' }}>Very long text (should show gradient effect)</h3>
           <TestKeywordNode data={veryLongTextNode} selected={false} />
         </div>
 
         <div>
-          <h3 style={{ color: '#ccc', marginBottom: '10px' }}>选中状态的长文本</h3>
+          <h3 style={{ color: '#ccc', marginBottom: '10px' }}>Selected state long text</h3>
           <TestKeywordNode data={longTextNode} selected={true} />
         </div>
       </div>
 
       <div style={{ color: '#888', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
-        <p>✨ 点击节点可以展开/收起文本内容</p>
-        <p>📝 超过30个字符的文本会显示渐变模糊效果</p>
-        <p>🔽 收起状态显示向下箭头，展开状态显示向上箭头</p>
-        <p>🎨 选中状态的节点渐变色会变为绿色</p>
+        <p>✨ Click nodes to expand/collapse text content</p>
+        <p>📝 Text over 30 characters will show gradient blur effect</p>
+        <p>🔽 Collapsed state shows down arrow, expanded state shows up arrow</p>
+        <p>🎨 Selected nodes will have green gradient color</p>
       </div>
     </div>
   );

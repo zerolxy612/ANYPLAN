@@ -19,7 +19,7 @@ import { NodeExpansionResult } from '@/lib/ai/types';
 import { geminiService } from '@/lib/ai/gemini';
 import { CHATBOT_RESPONSE_TEMPLATE } from '@/lib/ai/prompts';
 import { downloadFile, createSnapshotFilename } from '@/lib/utils/file';
-// AI 辅助函数 - 使用真实的 Gemini API
+// AI helper functions - using real Gemini API
 const analyzeUserInput = async (userInput: string, existingLevels?: Array<{level: number, description: string}>) => {
   try {
     const result = await geminiService.analyzeAndGenerateLevels({ userInput, existingLevels });
@@ -39,13 +39,13 @@ const analyzeUserInput = async (userInput: string, existingLevels?: Array<{level
     return {
       levelCount: 3,
       levels: [
-        { level: 1, label: 'L1', description: '表层探索', isActive: true, nodeCount: 2 },
-        { level: 2, label: 'L2', description: '具体原因', isActive: false, nodeCount: 0 },
-        { level: 3, label: 'L3', description: '解决方案', isActive: false, nodeCount: 0 }
+        { level: 1, label: 'L1', description: 'Surface Exploration', isActive: true, nodeCount: 2 },
+        { level: 2, label: 'L2', description: 'Root Analysis', isActive: false, nodeCount: 0 },
+        { level: 3, label: 'L3', description: 'Deep Solutions', isActive: false, nodeCount: 0 }
       ],
       initialNodes: [
-        { level: 1, content: '问题的表面现象', hasChildren: true },
-        { level: 1, content: '相关影响因素', hasChildren: true }
+        { level: 1, content: 'Surface phenomena', hasChildren: true },
+        { level: 1, content: 'Related factors', hasChildren: true }
       ],
       originalPrompt: userInput
     };
@@ -68,7 +68,7 @@ const expandNodeContent = async (
     return result;
   } catch (error) {
     console.error('Node expansion failed, using fallback:', error);
-    // 降级处理：返回默认子节点，根据层级生成不同内容
+    // Fallback: return default child nodes, generate different content based on level
     const fallbackContent = generateFallbackContent(nodeContent, nodeLevel);
     return {
       children: fallbackContent
@@ -76,38 +76,38 @@ const expandNodeContent = async (
   }
 };
 
-// 生成降级内容的函数
+// Function to generate fallback content
 const generateFallbackContent = (nodeContent: string, nodeLevel: number): Array<{
   content: string;
   level: number;
   hasChildren: boolean;
 }> => {
-  const baseContent = nodeContent || '拖延症';
+  const baseContent = nodeContent || 'procrastination';
 
   switch (nodeLevel) {
-    case 0: // 原始节点 -> L1
+    case 0: // Original node -> L1
       return [
-        { content: '完美主义', level: 1, hasChildren: true },
-        { content: '缺乏动力', level: 1, hasChildren: true },
-        { content: '没有目标', level: 1, hasChildren: true }
+        { content: 'Perfectionism', level: 1, hasChildren: true },
+        { content: 'Lack of motivation', level: 1, hasChildren: true },
+        { content: 'No clear goals', level: 1, hasChildren: true }
       ];
     case 1: // L1 -> L2
       return [
-        { content: `${baseContent}的具体表现和影响`, level: 2, hasChildren: true },
-        { content: `${baseContent}背后的心理原因`, level: 2, hasChildren: true },
-        { content: `${baseContent}在日常生活中的体现`, level: 2, hasChildren: true }
+        { content: `Specific manifestations and impacts of ${baseContent}`, level: 2, hasChildren: true },
+        { content: `Psychological reasons behind ${baseContent}`, level: 2, hasChildren: true },
+        { content: `How ${baseContent} manifests in daily life`, level: 2, hasChildren: true }
       ];
     case 2: // L2 -> L3
       return [
-        { content: `深入分析${baseContent}的根本原因和触发因素`, level: 3, hasChildren: true },
-        { content: `探索${baseContent}与个人价值观和信念的关系`, level: 3, hasChildren: true },
-        { content: `理解${baseContent}对个人成长和目标实现的阻碍`, level: 3, hasChildren: true }
+        { content: `In-depth analysis of root causes and triggers of ${baseContent}`, level: 3, hasChildren: false },
+        { content: `Explore relationship between ${baseContent} and personal values`, level: 3, hasChildren: false },
+        { content: `Understanding how ${baseContent} hinders personal growth`, level: 3, hasChildren: false }
       ];
     default:
       return [
-        { content: `${baseContent} - 选项1`, level: nodeLevel + 1, hasChildren: true },
-        { content: `${baseContent} - 选项2`, level: nodeLevel + 1, hasChildren: true },
-        { content: `${baseContent} - 选项3`, level: nodeLevel + 1, hasChildren: true }
+        { content: `${baseContent} - Option 1`, level: nodeLevel + 1, hasChildren: nodeLevel + 1 < 3 },
+        { content: `${baseContent} - Option 2`, level: nodeLevel + 1, hasChildren: nodeLevel + 1 < 3 },
+        { content: `${baseContent} - Option 3`, level: nodeLevel + 1, hasChildren: nodeLevel + 1 < 3 }
       ];
   }
 };
@@ -233,19 +233,18 @@ const generateLevelDescription = async (newLevel: number, originalPrompt: string
     console.error('AI level description generation failed:', error);
   }
 
-  // 降级处理：使用智能默认描述
+  // Fallback: Use smart default descriptions
   const levelDescriptions = [
-    '表层探索', '具体原因', '深层机制', '解决方案', '实施策略', '效果评估',
-    '综合分析', '行动计划', '效果监控', '持续改进'
+    'Surface Exploration', 'Root Analysis', 'Deep Solutions'
   ];
 
-  // 确保不与现有描述重复
+  // Ensure no duplication with existing descriptions
   const existingDescriptions = existingLevels.map(l => l.description);
-  let description = levelDescriptions[newLevel - 1] || `第${newLevel}层级`;
+  let description = levelDescriptions[newLevel - 1] || `Level ${newLevel}`;
 
-  // 如果重复，尝试其他描述
+  // If duplicate, try other descriptions
   if (existingDescriptions.includes(description)) {
-    const alternatives = ['深入分析', '进阶探索', '系统思考', '策略制定', '方案优化'];
+    const alternatives = ['Deep Analysis', 'Advanced Exploration', 'System Thinking'];
     for (const alt of alternatives) {
       if (!existingDescriptions.includes(alt)) {
         description = alt;
@@ -261,37 +260,37 @@ const generateLevelDescription = async (newLevel: number, originalPrompt: string
 import { getNodeBackgroundColor } from '@/lib/canvas/constants';
 
 interface CanvasStore {
-  // 核心数据
+  // Core data
   nodes: CanvasNode[];
   edges: CanvasEdge[];
   viewport: Viewport;
   selectedPath: SelectedPath | null;
 
-  // AI相关状态
+  // AI-related state
   levels: AILevel[];
   currentLevel: number;
   originalPrompt: string;
   isAIGenerating: boolean;
 
-  // 模式管理
+  // Mode management
   mode: 'inquiry' | 'writing';
 
-  // 节点选择状态
-  selectedNodesByLevel: Record<number, string | null>; // 每个层级只能选中一个节点
+  // Node selection state
+  selectedNodesByLevel: Record<number, string | null>; // Each level can only select one node
 
-  // 节点展开状态 - 存储每个节点的展开状态
+  // Node expansion state - stores expansion state for each node
   nodeExpandedStates: Record<string, boolean>;
 
-  // 版本管理
+  // Version management
   snapshots: Snapshot[];
   currentSnapshotId: string | null;
 
-  // UI 状态
+  // UI state
   loading: LoadingState;
   error: ErrorState | null;
   config: CanvasConfig;
 
-  // 报告数据存储（用于下载按钮）
+  // Report data storage (for download buttons)
   lastGeneratedReport: {
     content: string;
     snapshot: CanvasSnapshot;
@@ -418,25 +417,25 @@ const defaultLoadingState: LoadingState = {
 
 export const useCanvasStore = create<CanvasStore>()(
   immer((set, get) => ({
-    // 初始状态
+    // Initial state
     nodes: [],
     edges: [],
     viewport: defaultViewport,
     selectedPath: null,
 
-    // AI相关初始状态 - 用户未操作时为空
+    // AI-related initial state - empty when user hasn't operated
     levels: [],
     currentLevel: 1,
     originalPrompt: '',
     isAIGenerating: false,
 
-    // 模式管理
+    // Mode management
     mode: 'inquiry',
 
-    // 节点选择状态
+    // Node selection state
     selectedNodesByLevel: {},
 
-    // 节点展开状态
+    // Node expansion state
     nodeExpandedStates: {},
 
     snapshots: [],
@@ -446,7 +445,7 @@ export const useCanvasStore = create<CanvasStore>()(
     config: defaultConfig,
     lastGeneratedReport: null,
 
-    // 基础操作
+    // Basic operations
     setNodes: (nodes) => set((state) => {
       state.nodes = nodes;
     }),
@@ -727,7 +726,7 @@ export const useCanvasStore = create<CanvasStore>()(
         nodeId: 'original-prompt',
         content: originalPrompt,
         level: 0,
-        levelDescription: '原始问题'
+        levelDescription: 'Original Question'
       });
 
       // 按层级顺序添加选中的节点
@@ -1448,14 +1447,14 @@ export const useCanvasStore = create<CanvasStore>()(
 
       // 检查是否在写作模式
       if (state.mode !== 'writing') {
-        throw new Error('报告生成只在写作模式下可用');
+        throw new Error('Report generation is only available in writing mode');
       }
 
       // 获取链路内容
       const chainContent = state.getSelectedChainContent();
 
       if (chainContent.length === 0) {
-        throw new Error('请先选择一条完整的思考链路');
+        throw new Error('Please select a complete thinking chain first');
       }
 
       set((state) => {

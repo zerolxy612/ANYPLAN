@@ -1,9 +1,9 @@
-// AI服务统一导出
+// AI service unified export
 
-// 导出AI服务
+// Export AI services
 export { geminiService, GeminiService } from './gemini';
 
-// 导出类型定义
+// Export type definitions
 export type {
   AIServiceConfig,
   AIServiceError,
@@ -19,7 +19,7 @@ export type {
   GeminiPart
 } from './types';
 
-// 导出Prompt模板
+// Export Prompt templates
 export {
   ANALYZE_AND_GENERATE_LEVELS_PROMPT,
   EXPAND_NODE_PROMPT,
@@ -28,9 +28,9 @@ export {
   ERROR_PROMPTS
 } from './prompts';
 
-// 工具函数
+// Utility functions
 export const getNodeBackgroundColor = (level: number): string => {
-  if (level === 0) return '#161618'; // 原始内容
+  if (level === 0) return '#161618'; // Original content
   return level % 2 === 1 ? '#262627' : '#161618';
 };
 

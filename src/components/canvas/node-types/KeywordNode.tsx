@@ -280,7 +280,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
             {data.content.length > 30 && (
               <>
                 {!isExpanded && <div className="fade-overlay"></div>}
-                <div className="expand-indicator" title="双击展开/收缩">
+                <div className="expand-indicator" title="Double-click to expand/collapse">
                   {isExpanded ? (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                       <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -300,7 +300,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         {(isGenerating || isRenewing) && (
           <div className="loading-overlay">
             <div className="loading-spinner" />
-            <span>{isRenewing ? '更新中...' : '生成中...'}</span>
+            <span>{isRenewing ? 'Updating...' : 'Generating...'}</span>
           </div>
         )}
       </div>
@@ -313,7 +313,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
             e.stopPropagation();
             handleStartEdit();
           }}
-          title="编辑节点内容"
+          title="Edit node content"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
             <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -331,7 +331,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           }}
           onMouseEnter={handleButtonMouseEnter}
           onMouseLeave={handleButtonMouseLeave}
-          title="生成同层级节点"
+          title="Generate sibling node"
         >
           +
         </div>
@@ -350,7 +350,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           onClick={(e) => e.stopPropagation()}
         >
           <div className="context-menu-item" onClick={handleDeleteNode}>
-            🗑️ 删除节点
+            🗑️ Delete node
           </div>
         </div>
       )}

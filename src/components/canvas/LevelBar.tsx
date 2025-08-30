@@ -441,7 +441,7 @@ const LevelBar: React.FC<LevelBarProps> = ({
 
           // 添加层级间的"+"按钮（在当前层级后面，但不包括最后一个层级）
           // 只有在onAddLevel回调存在时才显示（即未禁用时）
-          if (index < levels.length - 1 && levels.length < 6 && onAddLevel) {
+          if (index < levels.length - 1 && levels.length < 3 && onAddLevel) {
             // 计算下一个层级的位置
             const nextLevel = levels[index + 1];
             const nextCanvasLevelX = 400 + (nextLevel.level - 1) * 300;
@@ -503,7 +503,7 @@ const LevelBar: React.FC<LevelBarProps> = ({
 
         {/* 添加层级按钮 - 位于最后一个层级的右侧 */}
         {/* 只有在onAddLevel回调存在时才显示（即未禁用时） */}
-        {levels.length < 6 && levels.length > 0 && onAddLevel && (() => {
+        {levels.length < 3 && levels.length > 0 && onAddLevel && (() => {
           const lastLevel = levels[levels.length - 1];
           const lastCanvasLevelX = 400 + (lastLevel.level - 1) * 300;
           const lastCanvasLevelWidth = 300;
