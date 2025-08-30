@@ -256,8 +256,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     >
       {/* 节点内容 */}
       <div className="node-content">
-        {data.level === 1 ? (
-          // L1节点：投诉信问题+用户输入
+        {(data.level === 1 || data.level === 2 || data.level === 3) ? (
+          // L1/L2/L3节点：投诉信问题+用户输入
           <div className="complaint-question-node">
             {/* 问题文本 */}
             <div className="question-text">
@@ -265,8 +265,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
             </div>
             {/* 用户输入区域 */}
             <div className="user-input-area">
-              <input
-                type="text"
+              <textarea
                 value={data.userInput || ''}
                 onChange={(e) => {
                   // 使用store的方法更新节点数据
@@ -276,9 +275,30 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
                       (state.nodes[nodeIndex].data as KeywordNodeData).userInput = e.target.value;
                     }
                   });
+
+                  // 自动调整高度
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+                }}
+                onPaste={(e) => {
+                  // 确保粘贴功能正常工作
+                  e.stopPropagation();
+                }}
+                onKeyDown={(e) => {
+                  // 防止某些快捷键被画布拦截
+                  e.stopPropagation();
+                }}
+                onInput={(e) => {
+                  // 处理输入时的高度调整
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = Math.min(target.scrollHeight, 120) + 'px';
                 }}
                 placeholder="Enter your answer..."
                 className="user-input"
+                rows={3}
+                style={{ resize: 'none' }}
               />
             </div>
           </div>
@@ -331,8 +351,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         )}
       </div>
 
-      {/* 编辑按钮 - L1节点不显示编辑按钮 */}
-      {!isEditing && data.level !== 1 && (
+      {/* 编辑按钮 - L1/L2/L3节点不显示编辑按钮 */}
+      {!isEditing && data.level > 3 && (
         <div
           className="edit-button"
           onClick={(e) => {
@@ -347,8 +367,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         </div>
       )}
 
-      {/* 上方+按钮 - L1节点不显示同层级生成按钮 */}
-      {nodeSelected && isHovered && data.level !== 1 && (
+      {/* 上方+按钮 - L1/L2/L3节点不显示同层级生成按钮 */}
+      {nodeSelected && isHovered && data.level > 3 && (
         <div
           className="sibling-add-button"
           onClick={(e) => {
@@ -814,6 +834,13 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           font-weight: 500;
           outline: none;
           transition: all 0.2s ease;
+          font-family: inherit;
+          line-height: 1.4;
+          min-height: 60px;
+          max-height: 120px;
+          overflow-y: auto;
+          word-wrap: break-word;
+          white-space: pre-wrap;
         }
 
         .user-input:focus {
@@ -825,6 +852,25 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         .user-input::placeholder {
           color: rgba(255, 255, 255, 0.5);
           font-weight: 400;
+        }
+
+        /* 自定义滚动条样式 */
+        .user-input::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .user-input::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 3px;
+        }
+
+        .user-input::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.3);
+          border-radius: 3px;
+        }
+
+        .user-input::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.5);
         }
       `}</style>
     </div>

@@ -87,17 +87,23 @@ const generateFallbackContent = (nodeContent: string, nodeLevel: number): Array<
   switch (nodeLevel) {
     case 0: // Original node -> L1 (固定的投诉信问题)
       return [
-        { content: 'What time?', level: 1, hasChildren: false },
-        { content: 'Which place?', level: 1, hasChildren: false },
-        { content: 'With who?', level: 1, hasChildren: false }
+        { content: 'What time?', level: 1, hasChildren: true },
+        { content: 'Which place?', level: 1, hasChildren: true },
+        { content: 'With who?', level: 1, hasChildren: true }
       ];
-    case 1: // L1 -> L2
+    case 1: // L1 -> L2 (固定的情感影响问题)
       return [
-        { content: `Specific manifestations and impacts of ${baseContent}`, level: 2, hasChildren: true },
-        { content: `Psychological reasons behind ${baseContent}`, level: 2, hasChildren: true },
-        { content: `How ${baseContent} manifests in daily life`, level: 2, hasChildren: true }
+        { content: 'How did it affect you emotionally?', level: 2, hasChildren: true },
+        { content: 'What inconvenience or harm did it cause?', level: 2, hasChildren: true },
+        { content: 'How important was this to you?', level: 2, hasChildren: true }
       ];
-    case 2: // L2 -> L3
+    case 2: // L2 -> L3 (固定的解决方案问题)
+      return [
+        { content: 'What do you want them to do?', level: 3, hasChildren: false },
+        { content: 'How soon do you expect a response?', level: 3, hasChildren: false },
+        { content: 'Is there anything you\'d accept as an alternative?', level: 3, hasChildren: false }
+      ];
+    case 3: // L3 -> L4
       return [
         { content: `In-depth analysis of root causes and triggers of ${baseContent}`, level: 3, hasChildren: false },
         { content: `Explore relationship between ${baseContent} and personal values`, level: 3, hasChildren: false },
@@ -129,12 +135,21 @@ const getLevelAreaX = (level: number): number => {
   return l1AreaX + (level - 1) * levelWidth;
 };
 
-// 估算节点高度的函数 - 优化版本，支持L1投诉信节点
+// 估算节点高度的函数 - 优化版本，支持投诉信问题节点
 const estimateNodeHeight = (content: string, isExpanded: boolean = false, level?: number): number => {
-  // L1投诉信问题节点的特殊高度计算
-  if (level === 1 && (content === 'What time?' || content === 'Which place?' || content === 'With who?')) {
-    // L1节点包含问题文本 + 输入框，需要更多空间
-    return 90; // 问题文本(~20px) + 间距(8px) + 输入框(~40px) + padding(~22px)
+  // 投诉信问题节点的特殊高度计算
+  const isComplaintQuestion = (
+    // L1问题
+    (level === 1 && (content === 'What time?' || content === 'Which place?' || content === 'With who?')) ||
+    // L2问题
+    (level === 2 && (content === 'How did it affect you emotionally?' || content === 'What inconvenience or harm did it cause?' || content === 'How important was this to you?')) ||
+    // L3问题
+    (level === 3 && (content === 'What do you want them to do?' || content === 'How soon do you expect a response?' || content === 'Is there anything you\'d accept as an alternative?'))
+  );
+
+  if (isComplaintQuestion) {
+    // 投诉信问题节点包含问题文本 + 多行文本域，需要更多空间
+    return 120; // 问题文本(~20px) + 间距(8px) + 多行文本域(~60px) + padding(~32px)
   }
 
   const baseHeight = 50; // 最小高度
@@ -184,9 +199,9 @@ const calculateChildVerticalPositions = (
     estimateNodeHeight(content, expandedStates[index] || false, childLevel)
   );
 
-  // 计算最小间距（确保节点不重叠）- 增加间距以适应展开节点
-  const baseMinSpacing = 30; // 基础最小间距，从20增加到30
-  const expandedNodeExtraSpacing = 20; // 展开节点的额外间距
+  // 计算最小间距（确保节点不重叠）- 为投诉信问题节点增加更多间距
+  const baseMinSpacing = 60; // 基础最小间距，进一步增加到60，确保120px高度节点有足够间距
+  const expandedNodeExtraSpacing = 40; // 展开节点的额外间距，增加到40
 
   // 计算总高度和位置
   let totalHeight = 0;
@@ -198,12 +213,18 @@ const calculateChildVerticalPositions = (
     const currentExpanded = expandedStates[i] || false;
     const nextExpanded = expandedStates[i + 1] || false;
 
+    // 检查是否是投诉信问题节点（高度为120px）
+    const isComplaintNodes = currentNodeHeight >= 120 || nextNodeHeight >= 120;
+
     // 如果有展开节点，增加额外间距
     const extraSpacing = (currentExpanded || nextExpanded) ? expandedNodeExtraSpacing : 0;
 
+    // 为投诉信问题节点提供额外间距
+    const complaintExtraSpacing = isComplaintNodes ? 20 : 0;
+
     const requiredSpacing = Math.max(
-      baseMinSpacing + extraSpacing,
-      (currentNodeHeight + nextNodeHeight) / 2 + baseMinSpacing + extraSpacing
+      baseMinSpacing + extraSpacing + complaintExtraSpacing,
+      (currentNodeHeight + nextNodeHeight) / 2 + baseMinSpacing + extraSpacing + complaintExtraSpacing
     );
     spacings.push(requiredSpacing);
     totalHeight += requiredSpacing;
@@ -1122,12 +1143,25 @@ export const useCanvasStore = create<CanvasStore>()(
           throw new Error('Parent node not found');
         }
 
-        const expansionResult = await expandNodeContent(
-          parentNode.data.content,
-          parentNode.data.level,
-          context.parentContent || '',
-          useCanvasStore.getState().originalPrompt
-        );
+        // 检查是否是L1或L2节点，使用固定问题
+        const isL1Node = parentNode.data.level === 1;
+        const isL2Node = parentNode.data.level === 2;
+
+        let expansionResult;
+        if (isL1Node || isL2Node) {
+          console.log(`🎯 Generating fixed questions for L${parentNode.data.level + 1} level`);
+          // 使用固定问题，不调用AI，包装成统一格式
+          const fixedQuestions = generateFallbackContent('', parentNode.data.level);
+          expansionResult = { children: fixedQuestions };
+        } else {
+          // L3及以上层级使用AI生成
+          expansionResult = await expandNodeContent(
+            parentNode.data.content,
+            parentNode.data.level,
+            context.parentContent || '',
+            useCanvasStore.getState().originalPrompt
+          );
+        }
 
         set((state) => {
           const parentNodeIndex = state.nodes.findIndex(n => n.id === nodeId);
@@ -1148,7 +1182,8 @@ export const useCanvasStore = create<CanvasStore>()(
             parentNode.position.y,
             expansionResult.children.length,
             childContents,
-            expandedStates
+            expandedStates,
+            childLevel // 传入子节点层级
           );
 
           // 生成子节点
@@ -1169,10 +1204,15 @@ export const useCanvasStore = create<CanvasStore>()(
               level: childLevel,
               parentId: nodeId,
               type: 'keyword' as const,
-              canExpand: childLevel < state.levels.length, // 基于实际配置的层级数量
-              hasChildren: childLevel < state.levels.length,
+              canExpand: childLevel < 3, // L1和L2可以展开，L3不能展开
+              hasChildren: childLevel < 3,
               isGenerating: false,
               isSelected: false,
+              // 为投诉信问题节点添加特殊字段
+              ...(childLevel <= 3 && {
+                questionText: childData.content, // 存储问题文本
+                userInput: '', // 用户输入的答案
+              }),
             } as KeywordNodeData,
             style: {
               backgroundColor: getNodeBackgroundColor(childLevel),
