@@ -10,40 +10,39 @@ export const ANALYZE_AND_GENERATE_LEVELS_PROMPT = (userInput: string, existingLe
   return `
 **IMPORTANT: ALL OUTPUT MUST BE IN ENGLISH** - Generate all content in English regardless of the input language.
 
-Based on psychological counseling and personal growth scenarios, analyze the user's input keywords or questions to generate a progressive thinking exploration framework.
+Based on complaint letter writing scenarios, analyze the user's complaint input to generate a structured complaint framework.
 
 User Input: "${userInput}"${existingLevelsText}
 
-According to psychological counseling and personal growth needs, intelligently determine how many levels are needed to help users have a general thinking framework, and design concise titles for each level.
+For complaint letter writing, always generate exactly 3 levels with fixed descriptions to help users organize their complaint systematically.
 
 Level Progression Principles:
-- From surface to essence: L1 Surface phenomena → L2 Specific causes → L3 Deep mechanisms
-- From simple to complex: Content richness and depth increase layer by layer
-- From cognition to action: Understanding problems → Analyzing causes → Exploring essence
+- L1: Basic incident details → L2: Impact assessment → L3: Resolution requests
+- From facts to consequences: What happened → How it affected you → What you want done
+- From description to action: Documenting issues → Analyzing impact → Requesting solutions
 
 Level Content Requirements:
-- L1: Keywords or short phrases (5-15 words) - Surface phenomena and intuitive feelings
-- L2: Detailed sentences (15-40 words) - Specific causes and influencing factors
-- L3: In-depth content (40-80 words) - Deep psychological mechanisms and root causes
+- L1: Basic incident information - time, place, people involved
+- L2: Impact analysis - emotional, financial, or practical consequences
+- L3: Resolution requests - specific actions or compensation desired
 
-Level Description Naming Standards:
-- Must be concise English phrases (2-4 words)
-- Reflect the core function and exploration focus of that level
-- Do not repeat existing level descriptions
-- Arranged in progressive relationship: Identify → Analyze → Explore
+Level Description Naming Standards (FIXED):
+- L1: "What happened?" - Basic incident details
+- L2: "Its impact?" - Impact and consequences analysis
+- L3: "What you want?" - Resolution and action requests
 
 Please return strictly in the following JSON format:
 {
   "levelCount": 3,
   "levels": [
-    {"level": 1, "label": "L1", "description": "Surface Exploration"},
-    {"level": 2, "label": "L2", "description": "Root Analysis"},
-    {"level": 3, "label": "L3", "description": "Deep Solutions"}
+    {"level": 1, "label": "L1", "description": "What happened?"},
+    {"level": 2, "label": "L2", "description": "Its impact?"},
+    {"level": 3, "label": "L3", "description": "What you want?"}
   ],
   "initialNodes": [
-    {"level": 1, "content": "Anxiety feelings", "hasChildren": true},
-    {"level": 1, "content": "Stress response", "hasChildren": true},
-    {"level": 1, "content": "Avoidance behavior", "hasChildren": true}
+    {"level": 1, "content": "What time?", "hasChildren": true},
+    {"level": 1, "content": "Which place?", "hasChildren": true},
+    {"level": 1, "content": "With who?", "hasChildren": true}
   ]
 }
 

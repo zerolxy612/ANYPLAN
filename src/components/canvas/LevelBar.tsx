@@ -258,7 +258,7 @@ const LevelBar: React.FC<LevelBarProps> = ({
         padding: '0 20px'
       }}>
         <div style={{ color: '#a1a1aa', fontSize: '14px' }}>
-          请在右侧输入问题开始探索
+          Please enter your complaint in the chat to start
         </div>
       </div>
     );
@@ -283,7 +283,7 @@ const LevelBar: React.FC<LevelBarProps> = ({
         fontSize: '12px',
         zIndex: 10
       }}>
-        主题 | 排版
+        TOPIC | Delayed Delivery
       </div>
 
       {/* 层级按钮容器 - 简化版本，先确保基本显示正确 */}

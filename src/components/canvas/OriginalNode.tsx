@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useCanvasStore } from '@/store/canvas.store';
 
 interface OriginalNodeProps {
@@ -17,6 +17,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
   viewport
 }) => {
   const { generateChildren, loading, originalPrompt, mainConcerns } = useCanvasStore();
+  const [isExpanded, setIsExpanded] = useState(false); // 展开状态
   const zoom = viewport?.zoom || 1;
   const offsetX = viewport?.x || 0;
   const offsetY = viewport?.y || 0;
@@ -59,7 +60,8 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
 
   // 原始节点位置（基于生成按钮位置反推，确保整体协调）
   const nodeWidth = 160;
-  const nodeHeight = 60;
+  const baseNodeHeight = 80;
+  const nodeHeight = isExpanded ? Math.max(baseNodeHeight, 120) : baseNodeHeight; // 展开时至少120px，收起时80px
   const nodeX = l1BoundaryX - nodeWidth - 40;  // 距离分界线40px
   const nodeY = canvasCenterY - nodeHeight / 2;  // 垂直居中
 
@@ -170,7 +172,8 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
           left: `${transformedX}px`,
           top: `${transformedY}px`,
           width: `${transformedWidth}px`,
-          height: `${transformedHeight}px`,
+          height: isExpanded ? 'auto' : `${transformedHeight}px`,
+        minHeight: `${transformedHeight}px`,
           backgroundColor: '#2a2a2c',
           border: '2px solid #404040',
           borderRadius: '12px',
@@ -197,18 +200,23 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
 
         {/* 内容 */}
         <div
+          onDoubleClick={() => setIsExpanded(!isExpanded)}
           style={{
             fontSize: `${14 * zoom}px`,  // 稍微减小字体
             color: '#ffffff',
             fontWeight: '600',
             textAlign: 'center',
             lineHeight: '1.4',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
+            overflow: isExpanded ? 'visible' : 'hidden',
+            textOverflow: isExpanded ? 'unset' : 'ellipsis',
+            display: isExpanded ? 'block' : '-webkit-box',
+            WebkitLineClamp: isExpanded ? 'unset' : 4,
+            WebkitBoxOrient: isExpanded ? 'unset' : 'vertical',
+            maxHeight: isExpanded ? 'none' : `${14 * zoom * 1.4 * 4}px`,
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
           }}
+          title={isExpanded ? "Double-click to collapse" : "Double-click to expand full content"}
         >
           {mainConcerns || content}
         </div>
