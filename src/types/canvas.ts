@@ -16,6 +16,9 @@ export interface KeywordNodeData extends BaseNodeData {
   keywords?: string[];
   canExpand: boolean;
   hasChildren: boolean;
+  // 投诉信相关字段
+  questionText?: string; // 问题文本（如"What time?"）
+  userInput?: string; // 用户输入的答案
 }
 
 // 层级指示器节点数据

@@ -256,8 +256,34 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     >
       {/* 节点内容 */}
       <div className="node-content">
-        {isEditing ? (
-          // 编辑模式
+        {data.level === 1 ? (
+          // L1节点：投诉信问题+用户输入
+          <div className="complaint-question-node">
+            {/* 问题文本 */}
+            <div className="question-text">
+              {data.questionText || data.content}
+            </div>
+            {/* 用户输入区域 */}
+            <div className="user-input-area">
+              <input
+                type="text"
+                value={data.userInput || ''}
+                onChange={(e) => {
+                  // 使用store的方法更新节点数据
+                  useCanvasStore.setState((state) => {
+                    const nodeIndex = state.nodes.findIndex(n => n.id === data.id);
+                    if (nodeIndex !== -1 && state.nodes[nodeIndex].data) {
+                      (state.nodes[nodeIndex].data as KeywordNodeData).userInput = e.target.value;
+                    }
+                  });
+                }}
+                placeholder="Enter your answer..."
+                className="user-input"
+              />
+            </div>
+          </div>
+        ) : isEditing ? (
+          // 其他层级的编辑模式
           <div className="edit-mode">
             <input
               type="text"
@@ -270,7 +296,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
             />
           </div>
         ) : (
-          // 显示模式
+          // 其他层级的显示模式
           <div
             className={`content-text ${isExpanded ? 'expanded' : 'collapsed'}`}
           >
@@ -305,8 +331,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         )}
       </div>
 
-      {/* 编辑按钮 - 右侧下拉箭头 */}
-      {!isEditing && (
+      {/* 编辑按钮 - L1节点不显示编辑按钮 */}
+      {!isEditing && data.level !== 1 && (
         <div
           className="edit-button"
           onClick={(e) => {
@@ -321,8 +347,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         </div>
       )}
 
-      {/* 上方+按钮 - 只在节点高亮且hover时显示 */}
-      {nodeSelected && isHovered && (
+      {/* 上方+按钮 - L1节点不显示同层级生成按钮 */}
+      {nodeSelected && isHovered && data.level !== 1 && (
         <div
           className="sibling-add-button"
           onClick={(e) => {
@@ -753,6 +779,52 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         .edit-input:focus {
           border-color: #4ade80;
           box-shadow: 0 0 0 2px rgba(101, 240, 163, 0.2);
+        }
+
+        /* 投诉信问题节点样式 */
+        .complaint-question-node {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .question-text {
+          font-size: 0.875rem; /* 14px */
+          font-weight: 600;
+          color: #ffffff;
+          text-align: center;
+          padding: 4px 0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-input-area {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .user-input {
+          width: 100%;
+          background: #171717;
+          border: 1px solid #404040;
+          border-radius: 8px;
+          padding: 8px 12px;
+          color: #ffffff;
+          font-size: 0.875rem; /* 14px */
+          font-weight: 500;
+          outline: none;
+          transition: all 0.2s ease;
+        }
+
+        .user-input:focus {
+          background: #171717;
+          border-color: #65f0a3;
+          box-shadow: 0 0 0 2px rgba(101, 240, 163, 0.3);
+        }
+
+        .user-input::placeholder {
+          color: rgba(255, 255, 255, 0.5);
+          font-weight: 400;
         }
       `}</style>
     </div>

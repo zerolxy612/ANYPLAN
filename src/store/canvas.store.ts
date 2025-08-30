@@ -82,14 +82,14 @@ const generateFallbackContent = (nodeContent: string, nodeLevel: number): Array<
   level: number;
   hasChildren: boolean;
 }> => {
-  const baseContent = nodeContent || 'procrastination';
+  const baseContent = nodeContent || 'complaint';
 
   switch (nodeLevel) {
-    case 0: // Original node -> L1
+    case 0: // Original node -> L1 (固定的投诉信问题)
       return [
-        { content: 'Perfectionism', level: 1, hasChildren: true },
-        { content: 'Lack of motivation', level: 1, hasChildren: true },
-        { content: 'No clear goals', level: 1, hasChildren: true }
+        { content: 'What time?', level: 1, hasChildren: false },
+        { content: 'Which place?', level: 1, hasChildren: false },
+        { content: 'With who?', level: 1, hasChildren: false }
       ];
     case 1: // L1 -> L2
       return [
@@ -129,8 +129,14 @@ const getLevelAreaX = (level: number): number => {
   return l1AreaX + (level - 1) * levelWidth;
 };
 
-// 估算节点高度的函数 - 优化版本
-const estimateNodeHeight = (content: string, isExpanded: boolean = false): number => {
+// 估算节点高度的函数 - 优化版本，支持L1投诉信节点
+const estimateNodeHeight = (content: string, isExpanded: boolean = false, level?: number): number => {
+  // L1投诉信问题节点的特殊高度计算
+  if (level === 1 && (content === 'What time?' || content === 'Which place?' || content === 'With who?')) {
+    // L1节点包含问题文本 + 输入框，需要更多空间
+    return 90; // 问题文本(~20px) + 间距(8px) + 输入框(~40px) + padding(~22px)
+  }
+
   const baseHeight = 50; // 最小高度
   const padding = 24; // 上下内边距 (12px * 2)
   const lineHeight = 19.6; // 14px * 1.4
@@ -166,15 +172,16 @@ const calculateChildVerticalPositions = (
   parentY: number,
   childCount: number,
   childContents: string[] = [],
-  expandedStates: boolean[] = []
+  expandedStates: boolean[] = [],
+  childLevel?: number // 新增参数：子节点的层级
 ): number[] => {
   if (childCount === 1) {
     return [parentY]; // 单个子节点直接对齐父节点
   }
 
-  // 估算每个节点的高度
+  // 估算每个节点的高度 - 使用childLevel参数
   const nodeHeights = childContents.map((content, index) =>
-    estimateNodeHeight(content, expandedStates[index] || false)
+    estimateNodeHeight(content, expandedStates[index] || false, childLevel)
   );
 
   // 计算最小间距（确保节点不重叠）- 增加间距以适应展开节点
@@ -1021,17 +1028,18 @@ export const useCanvasStore = create<CanvasStore>()(
         // 特殊处理原始节点的生成
         const isOriginalNode = nodeId === 'original-node' || nodeId.startsWith('original-') || nodeId === 'original-independent-node';
         if (isOriginalNode) {
-          console.log('🎯 Generating children for original node');
+          console.log('🎯 Generating children for original node - using fixed complaint questions');
 
-          // 为原始节点生成L1层级的3个选项
-          const expansionResult = await expandNodeContent(
-            context.parentContent || '',
-            0, // 原始节点层级为0
-            '',
-            useCanvasStore.getState().originalPrompt || ''
-          );
+          // 为投诉信生成固定的L1层级问题，不使用AI
+          const expansionResult = {
+            children: [
+              { content: 'What time?', level: 1, hasChildren: false },
+              { content: 'Which place?', level: 1, hasChildren: false },
+              { content: 'With who?', level: 1, hasChildren: false }
+            ]
+          };
 
-          console.log('📊 Analysis result:', expansionResult);
+          console.log('📊 Fixed L1 questions:', expansionResult);
           console.log('📊 Children count:', expansionResult.children?.length);
           console.log('📊 Children data:', expansionResult.children);
 
@@ -1050,7 +1058,8 @@ export const useCanvasStore = create<CanvasStore>()(
               canvasCenterY,
               expansionResult.children.length,
               childContents,
-              expandedStates
+              expandedStates,
+              1 // L1层级
             );
 
             // 生成3个选项节点，使用智能垂直布局
@@ -1072,10 +1081,13 @@ export const useCanvasStore = create<CanvasStore>()(
                   level: 1, // L1层级
                   parentId: nodeId, // 使用实际的原始节点ID
                   type: 'keyword' as const,
-                  canExpand: true, // L1节点总是可以展开到L2
-                  hasChildren: true,
+                  canExpand: true, // L1节点可以展开到L2（虽然暂时不用AI生成）
+                  hasChildren: false,
                   isGenerating: false,
                   isSelected: false,
+                  // 添加投诉信相关的数据结构
+                  questionText: childData.content, // 存储问题文本
+                  userInput: '', // 用户输入的答案
                 } as KeywordNodeData,
                 style: {
                   backgroundColor: getNodeBackgroundColor(1),
