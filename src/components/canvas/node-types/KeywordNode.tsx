@@ -435,7 +435,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           min-width: ${nodeWidth}px;
           max-width: ${nodeWidth}px;
           min-height: 50px;
-          max-height: ${isExpanded ? 'none' : '150px'};
+          max-height: ${isExpanded ? 'none' : '200px'};
           border-radius: 25px;
           border: 1px solid #e2e8f0;
           background: white;
@@ -444,6 +444,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           cursor: pointer;
           display: flex;
           flex-direction: column;
+          overflow: hidden; /* 确保内容不会超出节点边界 */
           /* 展开时增强阴影效果，提升视觉层级 */
           box-shadow: ${isExpanded ? '0 12px 48px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.15)' : 'inherit'};
         }
@@ -477,6 +478,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
           align-items: flex-start;
           justify-content: center;
           position: relative;
+          overflow: hidden; /* 确保内容不会超出节点边界 */
+          min-height: 0; /* 允许flex子元素收缩 */
         }
         
         .content-text {
@@ -492,14 +495,14 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         }
 
         .content-text.collapsed {
-          max-height: 98px; /* 约7行文字的高度 (14px * 1.4 * 5 ≈ 98px) */
+          max-height: 120px; /* 增加高度限制，约8-9行文字 */
           overflow: hidden;
           white-space: pre-wrap;
           transition: max-height 0.3s ease-out;
         }
 
         .content-text.expanded {
-          max-height: 500px; /* 设置一个足够大的值用于动画 */
+          max-height: none; /* 展开时不限制高度 */
           overflow: visible;
           white-space: pre-wrap;
           transition: max-height 0.3s ease-out;
