@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useCanvasStore } from '@/store/canvas.store';
-import ReportDownloadButtons from '@/components/common/ReportDownloadButtons';
 import { parseSnapshotFile, validateSnapshotFile } from '@/lib/utils/file';
+import GenerateReportPanel from './GenerateReportPanel';
 
 const ChatPanel = () => {
   const [greeting, setGreeting] = useState('');
@@ -174,93 +174,92 @@ const ChatPanel = () => {
   };
 
   return (
-    <div className="chat-panel">
-      {/* 消息历史 */}
-      {(chatMessages.length > 0 || isChatbotGenerating) && (
-        <div className="messages-section">
-          {chatMessages.map((message) => (
-            <div key={message.id} className={`message ${message.type}`}>
-              <div className={`message-content ${message.isMarkdown ? 'markdown-content' : ''}`}>
-                {message.isMarkdown ? (
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      h1: ({children}) => <h1 className="markdown-h1">{children}</h1>,
-                      h2: ({children}) => <h2 className="markdown-h2">{children}</h2>,
-                      h3: ({children}) => <h3 className="markdown-h3">{children}</h3>,
-                      p: ({children}) => <p className="markdown-p">{children}</p>,
-                      strong: ({children}) => <strong className="markdown-strong">{children}</strong>,
-                      ul: ({children}) => <ul className="markdown-ul">{children}</ul>,
-                      ol: ({children}) => <ol className="markdown-ol">{children}</ol>,
-                      li: ({children}) => <li className="markdown-li">{children}</li>,
-                    }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                ) : (
-                  message.content
-                )}
-              </div>
-              {/* 如果是Markdown消息（报告），在消息后添加下载按钮 */}
-              {message.isMarkdown && (
-                <ReportDownloadButtons />
+    <div className={`chat-panel ${chatMessages.length > 0 ? 'has-messages' : ''}`}>
+      {mode === 'writing' ? (
+        /* Generate模式：显示报告生成界面 */
+        <GenerateReportPanel />
+      ) : (
+        /* Ask Sue模式：显示聊天界面 */
+        <>
+          {/* 消息历史 */}
+          {(chatMessages.length > 0 || isChatbotGenerating) && (
+            <div className="messages-section">
+              {chatMessages.map((message) => (
+                <div key={message.id} className={`message ${message.type}`}>
+                  <div className={`message-content ${message.isMarkdown ? 'markdown-content' : ''}`}>
+                    {message.isMarkdown ? (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          h1: ({children}) => <h1 className="markdown-h1">{children}</h1>,
+                          h2: ({children}) => <h2 className="markdown-h2">{children}</h2>,
+                          h3: ({children}) => <h3 className="markdown-h3">{children}</h3>,
+                          p: ({children}) => <p className="markdown-p">{children}</p>,
+                          strong: ({children}) => <strong className="markdown-strong">{children}</strong>,
+                          ul: ({children}) => <ul className="markdown-ul">{children}</ul>,
+                          ol: ({children}) => <ol className="markdown-ol">{children}</ol>,
+                          li: ({children}) => <li className="markdown-li">{children}</li>,
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                    ) : (
+                      message.content
+                    )}
+                  </div>
+                </div>
+              ))}
+              {(isAIGenerating || isChatbotGenerating) && (
+                <div className="message ai">
+                  <div className="message-content">
+                    <div className="typing-indicator">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                    {isChatbotGenerating && (
+                      <span className="loading-text" style={{ marginLeft: '10px', fontSize: '14px', color: '#888' }}>
+                        Generating your complaint letter...
+                      </span>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
-          ))}
-          {(isAIGenerating || isChatbotGenerating) && (
-            <div className="message ai">
-              <div className="message-content">
-                <div className="typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-                {isChatbotGenerating && (
-                  <span className="loading-text" style={{ marginLeft: '10px', fontSize: '14px', color: '#888' }}>
-                    Generating your complaint letter...
-                  </span>
-                )}
-              </div>
-            </div>
           )}
-        </div>
-      )}
 
-      {/* 问候文本 */}
-      <div className={`greeting-section ${chatMessages.length > 0 ? 'compact' : ''}`}>
-        {chatMessages.length === 0 && (
-          <div className="text-block">
-            <h2 className="greeting-title">{displayGreeting},</h2>
-            <p className="greeting-subtitle">How can I help you?</p>
+          {/* 问候文本 */}
+          <div className={`greeting-section ${chatMessages.length > 0 ? 'compact' : ''}`}>
+            {chatMessages.length === 0 && (
+              <div className="text-block">
+                <h2 className="greeting-title">{displayGreeting},</h2>
+                <p className="greeting-subtitle">How can I help you?</p>
+              </div>
+            )}
+
+            {/* L3完成后的分析按钮 */}
+            {checkL3NodesComplete() && (
+              <div className="final-complaint-section">
+                <button
+                  className={`final-complaint-button ${isChatbotGenerating ? 'disabled' : ''}`}
+                  onClick={generateFinalComplaintLetter}
+                  disabled={isChatbotGenerating}
+                >
+                  {isChatbotGenerating ? '⏳ Analyzing...' : '🔍 Final Analyze'}
+                </button>
+                <p className="final-complaint-hint">
+                  All information collected! Click to get final analysis and recommendations.
+                </p>
+              </div>
+            )}
           </div>
-        )}
 
-        {/* L3完成后的分析按钮 */}
-        {checkL3NodesComplete() && (
-          <div className="final-complaint-section">
-            <button
-              className={`final-complaint-button ${isChatbotGenerating ? 'disabled' : ''}`}
-              onClick={generateFinalComplaintLetter}
-              disabled={isChatbotGenerating}
-            >
-              {isChatbotGenerating ? '⏳ Analyzing...' : '🔍 Final Analyze'}
-            </button>
-            <p className="final-complaint-hint">
-              All information collected! Click to get final analysis and recommendations.
-            </p>
-          </div>
-        )}
-
-        {/* 输入区域 */}
+          {/* 输入区域 */}
         <div className="input-section">
           <div className="input-container">
             <textarea
               className="chat-input"
-              placeholder={
-                mode === 'writing' && getSelectedChainContent().length > 0
-                  ? "Generate analysis report based on your selected thinking chain, or enter additional notes..."
-                  : "Please enter your question or upload a file"
-              }
+              placeholder="Please enter your question or upload a file"
               rows={3}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -272,19 +271,7 @@ const ChatPanel = () => {
                 <div className="model-info">
                   <span className="model-name">Gemini 2.0</span>
                 </div>
-                {mode === 'writing' && getSelectedChainContent().length > 0 && (
-                  <div className="snapshot-option">
-                    <label className="snapshot-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={downloadSnapshot}
-                        onChange={(e) => setDownloadSnapshot(e.target.checked)}
-                      />
-                      <span className="checkmark"></span>
-                      <span className="checkbox-label">Download snapshot</span>
-                    </label>
-                  </div>
-                )}
+
               </div>
               <div className="input-actions">
                 <div className="tooltip-container">
@@ -310,7 +297,7 @@ const ChatPanel = () => {
                   className={`action-button send-button ${isAIGenerating ? 'disabled' : ''}`}
                   title="Send"
                   onClick={handleSendMessage}
-                  disabled={isAIGenerating || (!inputValue.trim() && !(mode === 'writing' && getSelectedChainContent().length > 0))}
+                  disabled={isAIGenerating || !inputValue.trim()}
                 >
                   {isAIGenerating ? '⏳' : '↑'}
                 </button>
@@ -327,7 +314,8 @@ const ChatPanel = () => {
             </div>
           </div>
         </div>
-      </div>
+        </>
+      )}
 
       <style jsx>{`
         .chat-panel {
@@ -337,6 +325,18 @@ const ChatPanel = () => {
           display: flex;
           flex-direction: column;
           min-height: 0; /* 允许flex子元素收缩 */
+        }
+
+        /* 当没有消息时，整个内容区域居中 */
+        .chat-panel:not(.has-messages) {
+          justify-content: center;
+          align-items: center;
+        }
+
+        /* 当有消息时，正常的flex布局 */
+        .chat-panel.has-messages {
+          justify-content: flex-start;
+          align-items: stretch;
         }
 
         .messages-section {
@@ -430,11 +430,12 @@ const ChatPanel = () => {
           gap: 16px;
           justify-content: flex-end;
           flex-shrink: 0; /* 防止被挤压 */
+          flex: 1; /* 在有消息时占据剩余空间 */
         }
 
         .greeting-section:not(.compact) {
-          flex: 1;
-          /* 移除高度限制，恢复完全的垂直居中 */
+          /* 在没有消息时，不占据额外空间，让整体居中 */
+          flex: none;
         }
 
         .levels-info {
@@ -537,9 +538,17 @@ const ChatPanel = () => {
           flex-shrink: 0; /* 防止输入区域被挤压 */
         }
 
-        /* 只在紧凑模式下将输入区域推到底部 */
-        .greeting-section.compact .input-section {
+        /* 当没有消息时，输入区域紧跟在greeting后面 */
+        .chat-panel:not(.has-messages) .input-section {
+          margin-top: 32px; /* 与greeting保持适当间距 */
+          width: 100%;
+          max-width: 600px; /* 限制最大宽度，保持美观 */
+        }
+
+        /* 当有消息时，输入区域推到底部 */
+        .chat-panel.has-messages .input-section {
           margin-top: auto;
+          width: 100%;
         }
 
         .input-container {

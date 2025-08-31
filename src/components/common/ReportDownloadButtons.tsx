@@ -8,7 +8,7 @@ interface ReportDownloadButtonsProps {
 }
 
 const ReportDownloadButtons: React.FC<ReportDownloadButtonsProps> = ({ className = '' }) => {
-  const { lastGeneratedReport, downloadMarkdownReport, downloadSnapshotFile } = useCanvasStore();
+  const { lastGeneratedReport, downloadMarkdownReport } = useCanvasStore();
 
   // 如果没有生成的报告，不显示按钮
   if (!lastGeneratedReport) {
@@ -18,24 +18,15 @@ const ReportDownloadButtons: React.FC<ReportDownloadButtonsProps> = ({ className
   return (
     <div className={`download-buttons ${className}`}>
       <div className="download-buttons-container">
-        <h4 className="download-title">下载文件</h4>
+        <h4 className="download-title">Download Complaint Letter</h4>
         <div className="buttons-row">
           <button
             className="download-btn markdown-btn"
             onClick={downloadMarkdownReport}
-            title="下载 Markdown 格式的分析报告"
+            title="Download complaint letter as Markdown file"
           >
             <span className="btn-icon">📄</span>
-            <span className="btn-text">下载 Markdown 文件</span>
-          </button>
-          
-          <button
-            className="download-btn snapshot-btn"
-            onClick={downloadSnapshotFile}
-            title="下载思维导图快照文件"
-          >
-            <span className="btn-icon">💾</span>
-            <span className="btn-text">下载 JSON 文件</span>
+            <span className="btn-text">Download MD</span>
           </button>
         </div>
       </div>

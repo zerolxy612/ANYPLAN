@@ -139,6 +139,99 @@ Format your response as a helpful assistant message that acknowledges their prog
 **LANGUAGE REQUIREMENT**: Respond entirely in English, regardless of the input language.
 `;
 
+// Generate professional complaint letter based on collected information
+export const GENERATE_COMPLAINT_LETTER_PROMPT = (
+  chainContent: Array<{
+    nodeId: string;
+    content: string;
+    level: number;
+    levelDescription: string;
+  }>,
+  userInput?: string
+) => {
+  const chainText = chainContent
+    .map(item => `【${item.levelDescription}】${item.content}`)
+    .join('\n');
+
+  return `
+**MANDATORY: THE ENTIRE COMPLAINT LETTER MUST BE IN ENGLISH** - Generate all content in English regardless of input language.
+
+As a professional complaint letter writing assistant, please generate a complete, formal complaint letter based on the user's collected information.
+
+【User Information Collected】
+${chainText}
+
+${userInput ? `【Additional Notes】\n${userInput}\n` : ''}
+
+【Complaint Letter Requirements】
+Please generate a professional complaint letter with the following structure:
+
+**1. Header Section**
+- Date: [Current Date]
+- To: [Appropriate Department/Company]
+- Subject: Formal Complaint Regarding [Brief Issue Description]
+
+**2. Opening Paragraph**
+- Clear statement of the complaint
+- Reference numbers or relevant details if applicable
+- Professional but firm tone
+
+**3. Detailed Description**
+- Timeline of events (using L1 information: What happened?)
+- Impact and consequences (using L2 information: Its impact?)
+- Specific details that support the complaint
+
+**4. Resolution Request**
+- Clear statement of what you want (using L3 information: What you want?)
+- Specific actions requested
+- Reasonable timeline for response
+
+**5. Professional Closing**
+- Contact information
+- Professional sign-off
+- Next steps if no response
+
+【Writing Guidelines】
+- Use formal business letter format
+- Maintain professional, respectful but firm tone
+- Include specific details and facts
+- Make clear, actionable requests
+- Structure with proper paragraphs and formatting
+- Use bullet points where appropriate for clarity
+
+【Output Format】
+Return the complete complaint letter in Markdown format with proper headers, paragraphs, and formatting.
+
+**CRITICAL OUTPUT REQUIREMENTS:**
+- **RETURN ONLY THE COMPLAINT LETTER TEXT**: Do NOT wrap the response in JSON, objects, or any other format
+- **NO JSON FORMAT**: Do not return {"complaint_letter": {"letter": "..."}} or any similar structure
+- **PLAIN TEXT ONLY**: Return the complaint letter directly as plain text/markdown
+- **THE ENTIRE LETTER MUST BE IN ENGLISH**: Generate all content in English regardless of input language
+- Base the letter on the actual information provided by the user
+- Make it professional and credible
+- Include all relevant details from the user's inputs
+- Format as a complete, ready-to-send complaint letter
+- **LANGUAGE REQUIREMENT**: Write the complete letter in English only
+
+**EXAMPLE OF CORRECT OUTPUT FORMAT:**
+\`\`\`
+# Formal Complaint Letter
+
+**Date:** [Current Date]
+**To:** Customer Service Department
+**Subject:** Formal Complaint Regarding [Issue]
+
+Dear Sir/Madam,
+
+I am writing to formally complain about...
+[Rest of the letter content]
+
+Sincerely,
+[Name]
+\`\`\`
+`;
+};
+
 // Generate final analysis based on all collected information
 export const GENERATE_FINAL_ANALYSIS_PROMPT = (
   mainConcerns: string,

@@ -1714,6 +1714,35 @@ export const useCanvasStore = create<CanvasStore>()(
           console.log('📊 Report generated:', result.metadata);
         }
 
+        // 设置生成的报告到状态中
+        set((state) => {
+          state.lastGeneratedReport = {
+            content: result.report,
+            snapshot: {
+              version: '1.0.0',
+              createdAt: new Date().toISOString(),
+              originalPrompt: state.originalPrompt,
+              levels: state.levels,
+              nodes: state.nodes,
+              edges: state.edges,
+              selectedPath: state.selectedPath?.nodeIds.map((nodeId, index) => ({
+                nodeId,
+                level: index + 1
+              })) || [],
+              viewport: state.viewport,
+              metadata: {
+                title: 'Generated Complaint Letter',
+                description: 'Auto-generated complaint letter based on user inputs',
+                nodeCount: state.nodes.length,
+                levelCount: state.levels.length,
+                appVersion: '1.0.0'
+              }
+            },
+            timestamp: Date.now(),
+            dateStr: new Date().toLocaleString()
+          };
+        });
+
         return result.report;
       } catch (error) {
         console.error('Report generation failed:', error);

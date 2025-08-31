@@ -14,6 +14,7 @@ import {
   ANALYZE_AND_GENERATE_LEVELS_PROMPT,
   EXPAND_NODE_PROMPT,
   GENERATE_REPORT_PROMPT,
+  GENERATE_COMPLAINT_LETTER_PROMPT,
   EXTRACT_MAIN_CONCERNS_PROMPT,
   GENERATE_PROGRESSIVE_COMPLAINT_PROMPT,
   GENERATE_FINAL_ANALYSIS_PROMPT,
@@ -237,15 +238,41 @@ class GeminiService {
         throw this.createError('API_ERROR', 'Chain content cannot be empty');
       }
 
-      const prompt = GENERATE_REPORT_PROMPT(request.chainContent, request.userInput);
+      const prompt = GENERATE_COMPLAINT_LETTER_PROMPT(request.chainContent, request.userInput);
       const response = await this.sendRequest(prompt);
 
-      // 对于报告生成，我们直接返回文本内容，不需要JSON解析
-      const report = response.trim();
+      // 尝试解析AI返回的内容
+      let report: string;
 
-      if (!report) {
+      try {
+        // 首先尝试解析为JSON格式（AI可能返回结构化数据）
+        const parsedResponse = this.parseJSONResponse<any>(response);
+
+        // 检查常见的JSON结构
+        if (parsedResponse.complaint_letter && parsedResponse.complaint_letter.letter) {
+          report = parsedResponse.complaint_letter.letter;
+        } else if (parsedResponse.letter) {
+          report = parsedResponse.letter;
+        } else if (parsedResponse.content) {
+          report = parsedResponse.content;
+        } else if (typeof parsedResponse === 'string') {
+          report = parsedResponse;
+        } else {
+          // 如果是其他结构，尝试找到文本内容
+          const textContent = this.extractTextFromObject(parsedResponse);
+          report = textContent || JSON.stringify(parsedResponse, null, 2);
+        }
+      } catch (parseError) {
+        // 如果JSON解析失败，直接使用原始响应
+        report = response.trim();
+      }
+
+      if (!report || report.trim().length === 0) {
         throw new Error('Empty report generated');
       }
+
+      // 清理报告内容
+      report = report.trim();
 
       // 计算一些元数据
       const wordCount = report.length;
@@ -266,6 +293,36 @@ class GeminiService {
       }
       throw this.createError('API_ERROR', error instanceof Error ? error.message : 'Report generation failed');
     }
+  }
+
+  // 从对象中提取文本内容的辅助方法
+  private extractTextFromObject(obj: any): string | null {
+    if (typeof obj === 'string') {
+      return obj;
+    }
+
+    if (typeof obj === 'object' && obj !== null) {
+      // 尝试常见的文本字段名
+      const textFields = ['text', 'content', 'letter', 'report', 'message', 'body'];
+
+      for (const field of textFields) {
+        if (obj[field] && typeof obj[field] === 'string') {
+          return obj[field];
+        }
+      }
+
+      // 递归查找嵌套对象中的文本
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          const result = this.extractTextFromObject(obj[key]);
+          if (result) {
+            return result;
+          }
+        }
+      }
+    }
+
+    return null;
   }
 
   // 更新配置
