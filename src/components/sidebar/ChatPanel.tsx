@@ -279,7 +279,7 @@ const ChatPanel = () => {
                 {/* 显示引导提示 - 只在已完成final analyze后显示 */}
                 {hasFinalAnalyzed && (
                   <p className="generate-guide-hint">
-                    ✅ Analysis complete! You can now click the "Generate" button above to create your professional complaint letter.
+                    ✅ Analysis complete! You can now click the &quot;Generate&quot; button above to create your professional complaint letter.
                   </p>
                 )}
               </div>
