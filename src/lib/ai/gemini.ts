@@ -246,14 +246,18 @@ class GeminiService {
 
       try {
         // 首先尝试解析为JSON格式（AI可能返回结构化数据）
-        const parsedResponse = this.parseJSONResponse<any>(response);
+        const parsedResponse = this.parseJSONResponse<Record<string, unknown>>(response);
 
         // 检查常见的JSON结构
-        if (parsedResponse.complaint_letter && parsedResponse.complaint_letter.letter) {
-          report = parsedResponse.complaint_letter.letter;
-        } else if (parsedResponse.letter) {
+        if (this.hasProperty(parsedResponse, 'complaint_letter') &&
+            typeof parsedResponse.complaint_letter === 'object' &&
+            parsedResponse.complaint_letter !== null &&
+            this.hasProperty(parsedResponse.complaint_letter as Record<string, unknown>, 'letter') &&
+            typeof (parsedResponse.complaint_letter as Record<string, unknown>).letter === 'string') {
+          report = (parsedResponse.complaint_letter as Record<string, unknown>).letter as string;
+        } else if (this.hasProperty(parsedResponse, 'letter') && typeof parsedResponse.letter === 'string') {
           report = parsedResponse.letter;
-        } else if (parsedResponse.content) {
+        } else if (this.hasProperty(parsedResponse, 'content') && typeof parsedResponse.content === 'string') {
           report = parsedResponse.content;
         } else if (typeof parsedResponse === 'string') {
           report = parsedResponse;
@@ -262,7 +266,7 @@ class GeminiService {
           const textContent = this.extractTextFromObject(parsedResponse);
           report = textContent || JSON.stringify(parsedResponse, null, 2);
         }
-      } catch (parseError) {
+      } catch {
         // 如果JSON解析失败，直接使用原始响应
         report = response.trim();
       }
@@ -295,26 +299,33 @@ class GeminiService {
     }
   }
 
+  // 类型守卫：检查对象是否有指定属性
+  private hasProperty<T extends Record<string, unknown>>(obj: T, prop: string): obj is T & Record<typeof prop, unknown> {
+    return typeof obj === 'object' && obj !== null && prop in obj;
+  }
+
   // 从对象中提取文本内容的辅助方法
-  private extractTextFromObject(obj: any): string | null {
+  private extractTextFromObject(obj: unknown): string | null {
     if (typeof obj === 'string') {
       return obj;
     }
 
     if (typeof obj === 'object' && obj !== null) {
+      const record = obj as Record<string, unknown>;
+
       // 尝试常见的文本字段名
       const textFields = ['text', 'content', 'letter', 'report', 'message', 'body'];
 
       for (const field of textFields) {
-        if (obj[field] && typeof obj[field] === 'string') {
-          return obj[field];
+        if (this.hasProperty(record, field) && typeof record[field] === 'string') {
+          return record[field];
         }
       }
 
       // 递归查找嵌套对象中的文本
-      for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-          const result = this.extractTextFromObject(obj[key]);
+      for (const key in record) {
+        if (record.hasOwnProperty(key)) {
+          const result = this.extractTextFromObject(record[key]);
           if (result) {
             return result;
           }
