@@ -62,7 +62,7 @@ const ChatPanel = () => {
 
   // 处理用户输入
   const handleSendMessage = async () => {
-    if (isAIGenerating) {
+    if (isAIGenerating || isChatbotGenerating) {
       return;
     }
 
@@ -75,22 +75,24 @@ const ChatPanel = () => {
       return;
     }
 
+    const currentInput = inputValue.trim();
+
     // 如果有用户输入，添加用户消息
-    if (inputValue.trim()) {
+    if (currentInput) {
       addChatMessage({
         type: 'user',
-        content: inputValue.trim()
+        content: currentInput
       });
     }
 
-    const currentInput = inputValue.trim();
     setInputValue('');
 
     try {
       let aiResponse: string;
 
       if (isWritingModeWithChain) {
-        // 写作模式下生成报告
+        // 写作模式下生成报告 - 设置chatbot loading状态
+        useCanvasStore.setState({ isChatbotGenerating: true });
         console.log('🔍 Generating report for chain:', chainContent);
         if (downloadSnapshot) {
           aiResponse = await generateReportWithSnapshot(currentInput || undefined);
@@ -98,7 +100,7 @@ const ChatPanel = () => {
           aiResponse = await generateReport(currentInput || undefined);
         }
       } else {
-        // Normal mode: analyze user input
+        // Normal mode: analyze user input - 这里isAIGenerating已经在analyzeUserInput中设置了
         aiResponse = await analyzeUserInput(currentInput);
         aiResponse = typeof aiResponse === 'string' ? aiResponse : 'Analysis completed, please check the results on the canvas.';
       }
@@ -114,6 +116,11 @@ const ChatPanel = () => {
         type: 'ai',
         content: 'Sorry, an error occurred while processing your request. Please try again.'
       });
+    } finally {
+      // 确保清除chatbot loading状态
+      if (isWritingModeWithChain) {
+        useCanvasStore.setState({ isChatbotGenerating: false });
+      }
     }
   };
 
@@ -229,8 +236,8 @@ const ChatPanel = () => {
                   </div>
                 );
               })}
-              {/* 只有在没有消息但正在生成时才显示独立的loading */}
-              {chatMessages.length === 0 && (isAIGenerating || isChatbotGenerating) && (
+              {/* 在有消息且正在生成时显示loading */}
+              {(isAIGenerating || isChatbotGenerating) && (
                 <div className="message ai">
                   <div className="message-content">
                     <div className="typing-indicator">
