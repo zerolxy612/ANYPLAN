@@ -196,52 +196,26 @@ function CanvasComponent({ className }: CanvasProps) {
 
   return (
     <div className={`canvas-wrapper ${className || ''}`}>
-      {/* 层级条 */}
-      {levels.length > 0 ? (
-        <LevelBar
-          levels={levels}
-          currentLevel={currentLevel}
-          viewport={viewport}
-          onViewportChange={setViewport}
-          onLevelClick={(levelId) => {
-            const level = parseInt(levelId.replace('L', ''));
-            setCurrentLevel(level);
-          }}
-          onAddLevel={hasL1Nodes ? undefined : (afterLevel) => {
-            insertLevel(afterLevel);
-          }}
-          onDeleteLevel={hasL1Nodes ? undefined : (level) => {
-            deleteLevel(level);
-          }}
-          onEditLevel={(level, newDescription) => {
-            editLevel(level, newDescription);
-          }}
-        />
-      ) : (
-        <div style={{
-          width: '100%',
-          height: '80px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '0 20px'
-        }}>
-          <div style={{
-            width: '90%',
-            height: '60px',
-            backgroundColor: '#2a292c',
-            borderRadius: '30px',
-            border: '1px solid #404040',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#a1a1aa',
-            fontSize: '14px'
-          }}>
-            {/* 请在右侧输入问题开始探索 */}
-          </div>
-        </div>
-      )}
+      {/* 层级条 - 始终显示，无论是否有层级 */}
+      <LevelBar
+        levels={levels}
+        currentLevel={currentLevel}
+        viewport={viewport}
+        onViewportChange={setViewport}
+        onLevelClick={(levelId) => {
+          const level = parseInt(levelId.replace('L', ''));
+          setCurrentLevel(level);
+        }}
+        onAddLevel={hasL1Nodes ? undefined : (afterLevel) => {
+          insertLevel(afterLevel);
+        }}
+        onDeleteLevel={hasL1Nodes ? undefined : (level) => {
+          deleteLevel(level);
+        }}
+        onEditLevel={(level, newDescription) => {
+          editLevel(level, newDescription);
+        }}
+      />
 
       {/* 画布区域 */}
       <div

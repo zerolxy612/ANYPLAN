@@ -87,32 +87,50 @@ Important Constraints:
 
 // Extract main concerns from user complaint input
 export const EXTRACT_MAIN_CONCERNS_PROMPT = (userInput: string) => `
+${getCurrentTimeContext()}
+
 **IMPORTANT: ALL OUTPUT MUST BE IN ENGLISH** - Generate all content in English regardless of the input language.
 
-As a complaint letter writing assistant, analyze the user's complaint input and extract the main concerns in a clear, structured format.
+As a professional complaint analysis specialist, carefully analyze the user's complaint input and create a comprehensive yet concise summary of their main concerns. This summary will serve as the foundation for building their complaint letter.
 
-User Input: "${userInput}"
+**User Input:** "${userInput}"
 
-Please identify and extract the key concerns from this complaint, focusing on:
-1. The main issue or problem
-2. What went wrong
-3. The impact on the user
-4. What the user expects
+**Your Analysis Task:**
+Extract and synthesize the core issues into a clear, professional summary that captures:
 
-Format your response as a concise summary that captures the essence of the complaint in 2-3 sentences. This will be displayed as "Main Concerns" to help the user see the core issues clearly.
+1. **Primary Problem Identification**
+   - What is the central issue or failure?
+   - What specific service/product/experience went wrong?
 
-Requirements:
-- Write in clear, professional English
-- Focus on the main problems, not minor details
-- Keep it concise but comprehensive
-- Use objective language suitable for a complaint letter
-- Maximum 3 sentences
-- IMPORTANT: Return ONLY the plain text summary, no JSON, no formatting, no quotes
+2. **Key Impact Assessment**
+   - How has this affected the user (financially, emotionally, practically)?
+   - What consequences or damages resulted?
 
-Example format:
-The delivery was delayed far beyond the promised two days. The package was damaged, which raises worries about product safety. You want the company to take responsibility and respond seriously.
+3. **Expectation Gap Analysis**
+   - What was promised vs. what was delivered?
+   - Where did the company/service fail to meet standards?
 
-**CRITICAL**: Your response must be plain text only, not JSON or any other format.
+4. **Resolution Context**
+   - What does the user reasonably expect as a resolution?
+   - What would make this situation right?
+
+**Output Requirements:**
+- Create a 2-3 sentence professional summary that captures the essence of their complaint
+- Use clear, objective language suitable for formal complaint documentation
+- Focus on the most significant issues that strengthen their case
+- Avoid emotional language while acknowledging the user's legitimate concerns
+- Structure the summary to flow logically from problem → impact → expectation
+
+**Quality Standards:**
+- Professional tone appropriate for business correspondence
+- Specific enough to be actionable, general enough to be comprehensive
+- Emphasize the strongest aspects of their case
+- Use language that positions the user as a reasonable complainant seeking fair resolution
+
+**Example of Strong Summary:**
+"The premium delivery service failed to meet the guaranteed 24-hour timeline, arriving 5 days late and causing you to miss an important business presentation. The package arrived damaged with inadequate protection, suggesting poor handling procedures that compromise product quality and customer trust. You expect the company to acknowledge this service failure, provide appropriate compensation, and implement measures to prevent similar issues for future customers."
+
+**CRITICAL**: Return ONLY the plain text summary, no JSON, no formatting, no quotes.
 **LANGUAGE REQUIREMENT**: Respond entirely in English, regardless of the input language.
 `;
 

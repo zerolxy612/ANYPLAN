@@ -75,161 +75,9 @@ const LevelBar: React.FC<LevelBarProps> = ({
 
 
 
-  // 滑动功能 - 添加丝滑动画效果和边界处理
-  const handleSlideLeft = () => {
-    if (!viewport || !onViewportChange || levels.length === 0) return;
 
-    const containerWidth = typeof window !== 'undefined' ? window.innerWidth - 120 - 40 : 800;
-    const minLevel = Math.min(...levels.map(l => l.level));
 
-    // 找到当前最左侧完全可见的层级
-    let leftmostFullyVisibleLevel = Infinity;
-    for (const level of levels) {
-      const canvasLevelX = 400 + (level.level - 1) * 300;
-      const transformedX = canvasLevelX * viewport.zoom + viewport.x;
-      const buttonLeft = transformedX - 120 + (300 * viewport.zoom - 100) / 2;
 
-      if (buttonLeft >= 0 && buttonLeft + 100 <= containerWidth) {
-        leftmostFullyVisibleLevel = Math.min(leftmostFullyVisibleLevel, level.level);
-      }
-    }
-
-    // 如果当前已经可以看到原始区域和前3个层级，回到初始状态
-    const originalAreaX = 50; // 原始区域的x位置
-    const originalAreaVisible = (originalAreaX * viewport.zoom + viewport.x) >= -50; // 原始区域是否可见
-
-    if (leftmostFullyVisibleLevel <= minLevel && originalAreaVisible) {
-      // 回到初始状态：显示原始区域 + L1 + L2 + L3
-      const targetX = -150;
-      animateViewportChange(viewport, { ...viewport, x: targetX });
-      return;
-    }
-
-    // 如果还没到最左边，继续向左滑动
-    if (leftmostFullyVisibleLevel > minLevel) {
-      const targetLevel = Math.max(minLevel, leftmostFullyVisibleLevel - 1);
-      const targetCanvasX = 400 + (targetLevel - 1) * 300;
-      const targetX = containerWidth / 2 - (targetCanvasX * viewport.zoom - 120) - (300 * viewport.zoom) / 2;
-      animateViewportChange(viewport, { ...viewport, x: targetX });
-    } else {
-      // 回到显示原始区域的初始状态
-      const targetX = -150;
-      animateViewportChange(viewport, { ...viewport, x: targetX });
-    }
-  };
-
-  const handleSlideRight = () => {
-    if (!viewport || !onViewportChange || levels.length === 0) return;
-
-    const containerWidth = typeof window !== 'undefined' ? window.innerWidth - 120 - 40 : 800;
-    const maxLevel = Math.max(...levels.map(l => l.level));
-
-    // 找到当前最右侧完全可见的层级
-    let rightmostFullyVisibleLevel = 0;
-    for (const level of levels) {
-      const canvasLevelX = 400 + (level.level - 1) * 300;
-      const transformedX = canvasLevelX * viewport.zoom + viewport.x;
-      const buttonLeft = transformedX - 120 + (300 * viewport.zoom - 100) / 2;
-
-      if (buttonLeft >= 0 && buttonLeft + 100 <= containerWidth) {
-        rightmostFullyVisibleLevel = Math.max(rightmostFullyVisibleLevel, level.level);
-      }
-    }
-
-    // 如果已经是最后一个层级，不再滑动
-    if (rightmostFullyVisibleLevel >= maxLevel) {
-      return;
-    }
-
-    // 计算目标位置，让下一个层级完全可见
-    const targetLevel = Math.min(maxLevel, rightmostFullyVisibleLevel + 1);
-    const targetCanvasX = 400 + (targetLevel - 1) * 300;
-
-    // 计算让目标层级居中显示的viewport位置
-    const targetX = containerWidth / 2 - (targetCanvasX * viewport.zoom - 120) - (300 * viewport.zoom) / 2;
-
-    // 使用动画过渡
-    animateViewportChange(viewport, { ...viewport, x: targetX });
-  };
-
-  // 动画过渡函数
-  const animateViewportChange = (from: { x: number; y: number; zoom: number }, to: { x: number; y: number; zoom: number }) => {
-    if (!onViewportChange) return;
-
-    const duration = 300; // 300ms动画时长
-    const startTime = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-
-      // 使用easeInOutCubic缓动函数
-      const easeProgress = progress < 0.5
-        ? 4 * progress * progress * progress
-        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-
-      const currentX = from.x + (to.x - from.x) * easeProgress;
-
-      onViewportChange({
-        x: currentX,
-        y: from.y,
-        zoom: from.zoom
-      });
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-
-    animate();
-  };
-
-  // 计算滑动按钮的显示状态
-  const calculateSlideButtonsVisibility = () => {
-    if (!viewport || levels.length === 0) {
-      return { showLeftSlide: false, showRightSlide: false };
-    }
-
-    const zoom = viewport.zoom || 1;
-    const offsetX = viewport.x || 0;
-    const containerWidth = typeof window !== 'undefined' ? window.innerWidth - 120 - 40 : 800;
-
-    // 检查原始区域是否可见
-    const originalAreaX = 50;
-    const originalAreaVisible = (originalAreaX * zoom + offsetX) >= -50;
-
-    // 检查层级的可见性
-    let rightmostVisibleLevel = 0;
-    let leftmostVisibleLevel = Infinity;
-
-    for (const level of levels) {
-      const canvasLevelX = 400 + (level.level - 1) * 300;
-      const canvasLevelWidth = 300;
-      const transformedX = canvasLevelX * zoom + offsetX;
-      const transformedWidth = canvasLevelWidth * zoom;
-      const buttonWidth = 100;
-      const buttonLeft = transformedX - 120 + (transformedWidth - buttonWidth) / 2;
-
-      // 记录完全可见的层级范围
-      if (buttonLeft >= 0 && buttonLeft + buttonWidth <= containerWidth) {
-        leftmostVisibleLevel = Math.min(leftmostVisibleLevel, level.level);
-        rightmostVisibleLevel = Math.max(rightmostVisibleLevel, level.level);
-      }
-    }
-
-    const maxLevel = Math.max(...levels.map(l => l.level));
-    const minLevel = Math.min(...levels.map(l => l.level));
-
-    // 左滑动按钮：如果不是在初始状态（显示原始区域+前3个层级），则显示
-    const showLeftSlide = !originalAreaVisible || leftmostVisibleLevel > minLevel;
-
-    // 右滑动按钮：如果最右侧可见层级不是最后一个层级，则显示
-    const showRightSlide = rightmostVisibleLevel < maxLevel;
-
-    return { showLeftSlide, showRightSlide };
-  };
-
-  const { showLeftSlide, showRightSlide } = calculateSlideButtonsVisibility();
 
   // 点击其他地方关闭右键菜单
   React.useEffect(() => {
@@ -249,16 +97,24 @@ const LevelBar: React.FC<LevelBarProps> = ({
     return (
       <div className="level-bar" style={{
         width: '100%',
-        height: '60px',
+        height: '50px',
         backgroundColor: '#2a292c',
         borderBottom: '1px solid #404040',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '0 20px'
+        padding: '0 20px',
+        position: 'relative'
       }}>
-        <div style={{ color: '#a1a1aa', fontSize: '14px' }}>
-          Please enter your complaint in the chat to start
+        <div style={{
+          color: '#666666',
+          fontSize: '14px',
+          fontWeight: '500',
+          letterSpacing: '0.5px',
+          textAlign: 'center',
+          opacity: 0.8
+        }}>
+          SueMind | Power Your Complaint
         </div>
       </div>
     );
@@ -273,25 +129,14 @@ const LevelBar: React.FC<LevelBarProps> = ({
       borderBottom: '1px solid #404040',
       overflow: 'hidden'
     }}>
-      {/* 主题排版标签 - 固定在左侧 */}
-      <div style={{
-        position: 'absolute',
-        left: '20px',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        color: '#a1a1aa',
-        fontSize: '12px',
-        zIndex: 10
-      }}>
-        TOPIC | Delayed Delivery
-      </div>
 
-      {/* 层级按钮容器 - 简化版本，先确保基本显示正确 */}
+
+      {/* 层级按钮容器 */}
       <div style={{
         position: 'absolute',
-        left: '120px', // 在主题标签右侧开始
+        left: '20px', // 从左侧开始，不再需要为主题标签留空间
         top: '0',
-        right: '40px', // 为滑动按钮留出空间
+        right: '20px', // 不再需要为滑动按钮留空间
         height: '100%',
         display: 'flex',
         alignItems: 'center',
@@ -312,13 +157,13 @@ const LevelBar: React.FC<LevelBarProps> = ({
           const transformedWidth = canvasLevelWidth * zoom;
 
           // 转换为相对于LevelBar容器的位置
-          // LevelBar容器从120px开始，所以需要减去120px
+          // LevelBar容器从20px开始，所以需要减去20px
           // 让按钮居中对齐到对应的画布区域
           const buttonWidth = 140; // 增加宽度到140px，适合显示完整的英文问题文本
-          const buttonLeft = transformedX - 120 + (transformedWidth - buttonWidth) / 2; // 居中对齐，不使用Math.max
+          const buttonLeft = transformedX - 20 + (transformedWidth - buttonWidth) / 2; // 居中对齐，调整为新的容器起始位置
 
           // 如果按钮超出可视范围，则不显示
-          const containerWidth = typeof window !== 'undefined' ? window.innerWidth - 120 - 40 : 800; // 层级按钮容器的实际可用宽度
+          const containerWidth = typeof window !== 'undefined' ? window.innerWidth - 20 - 20 : 800; // 层级按钮容器的实际可用宽度
           if (buttonLeft > containerWidth || buttonLeft + buttonWidth < 0) {
             return null;
           }
@@ -560,81 +405,7 @@ const LevelBar: React.FC<LevelBarProps> = ({
           );
         })()}
 
-        {/* 左滑动按钮 */}
-        {showLeftSlide && (
-          <button
-            onClick={handleSlideLeft}
-            style={{
-              position: 'absolute',
-              left: '5px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: '28px',
-              height: '28px',
-              borderRadius: '6px',
-              backgroundColor: '#404040',
-              border: '1px solid #606060',
-              color: '#ffffff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              transition: 'all 0.2s ease',
-              zIndex: 15
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#65f0a3';
-              e.currentTarget.style.color = '#000000';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#404040';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            title="向左滑动查看前面的层级"
-          >
-            ‹
-          </button>
-        )}
 
-        {/* 右滑动按钮 */}
-        {showRightSlide && (
-          <button
-            onClick={handleSlideRight}
-            style={{
-              position: 'absolute',
-              right: '5px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: '28px',
-              height: '28px',
-              borderRadius: '6px',
-              backgroundColor: '#404040',
-              border: '1px solid #606060',
-              color: '#ffffff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              transition: 'all 0.2s ease',
-              zIndex: 15
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#65f0a3';
-              e.currentTarget.style.color = '#000000';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#404040';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            title="向右滑动查看后面的层级"
-          >
-            ›
-          </button>
-        )}
       </div>
 
       {/* 右键菜单 */}
