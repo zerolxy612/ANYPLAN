@@ -26,8 +26,8 @@ const DEFAULT_CONFIG: AIServiceConfig = {
   apiKey: 'AIzaSyBehM0G5s23Qv3Czh1sJpsclL2cpLBY3XQ',
   apiUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
   defaultTemperature: 0.7,
-  maxTokens: 2048,
-  timeout: 30000, // 30秒
+  maxTokens: 4096, // 增加token限制，支持更长的输出
+  timeout: 45000, // 增加超时时间到45秒
 };
 
 class GeminiService {
@@ -42,7 +42,7 @@ class GeminiService {
     const request: GeminiRequest = {
       contents: [
         {
-          parts: [{ text: SYSTEM_PROMPT }],
+          parts: [{ text: SYSTEM_PROMPT() }],
           role: 'user'
         },
         {

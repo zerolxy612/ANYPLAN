@@ -1,5 +1,31 @@
 // AI Prompt模板
 
+// 生成当前时间上下文的辅助函数
+export const getCurrentTimeContext = () => {
+  const now = new Date();
+  return `
+**CURRENT DATE & TIME CONTEXT:**
+Today's Date: ${now.toLocaleDateString('en-US', {
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+})}
+Current Year: ${now.getFullYear()}
+Current Time: ${now.toLocaleTimeString('en-US', {
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZoneName: 'short'
+})}
+
+**IMPORTANT DATE PROCESSING RULES:**
+- When writing complaint letters, use today's date as the letter date
+- When users provide incomplete dates (only month/day like "8-21" or "August 21"), automatically assume the current year (${now.getFullYear()})
+- When users provide complete dates (like "2024-8-21"), use their specified year
+- Always interpret and format dates clearly in your responses
+`;
+};
+
 // 分析用户问题并生成层级框架的Prompt
 export const ANALYZE_AND_GENERATE_LEVELS_PROMPT = (userInput: string, existingLevels?: Array<{level: number, description: string}>) => {
   const existingDescriptions = existingLevels?.map(l => l.description) || [];
@@ -100,40 +126,57 @@ export const GENERATE_PROGRESSIVE_COMPLAINT_PROMPT = (
   }>,
   currentLevel: number
 ) => `
+${getCurrentTimeContext()}
+
 **IMPORTANT: ALL OUTPUT MUST BE IN ENGLISH** - Generate all content in English regardless of the input language.
 
-As a complaint letter writing assistant, help the user build their complaint letter progressively. Based on the information they've provided so far, generate an update that builds upon our initial analysis.
+As a professional complaint letter writing assistant, provide a comprehensive analysis and guidance based on the information collected so far. You are helping the user build a strong, effective complaint letter.
 
 **Initial Analysis (for reference):**
 Main Concerns: "${mainConcerns}"
 
-**New Information Provided:**
-${userInputs.map(input => `${input.question}: ${input.answer}`).join('\n')}
+**Information Collected So Far:**
+${userInputs.map(input => `Level ${input.level} - ${input.question}: ${input.answer}`).join('\n')}
 
-Current Level: L${currentLevel}
+**Current Progress:** We are at Level ${currentLevel} of 3
 
-Generate a response that:
-1. **Acknowledges the new information** they've provided
-2. **References the initial concerns** to maintain continuity
-3. **Provides specific guidance** for the next steps
+**Your Task:** Provide a detailed, professional analysis that:
 
-Based on the level, provide appropriate guidance:
+1. **Acknowledges and Synthesizes the Information**
+   - Acknowledge the specific details they've provided at this level
+   - Show how this new information connects to their main concerns
+   - Demonstrate understanding of their situation's complexity
 
-**For L1 (Basic Information)**: Acknowledge their timeline details and guide them on organizing the sequence of events clearly.
+2. **Provides Strategic Analysis**
+   - Analyze the strength of their case based on current information
+   - Identify key evidence and compelling points
+   - Point out any patterns or connections that strengthen their position
 
-**For L2 (Impact Assessment)**: Acknowledge their location/context details and help them articulate the broader impact and consequences.
+3. **Offers Specific Guidance**
+   Based on the current level:
+   - **L1 (Timeline/When)**: Help them organize events chronologically and identify critical moments
+   - **L2 (Location/Where)**: Analyze how location/context affects their case and what additional evidence might be relevant
+   - **L3 (People/Who)**: Evaluate relationships and responsibilities, guide on how to present accountability
 
-**For L3 (Resolution Request)**: Acknowledge their relationship/responsibility details and guide them on formulating clear, actionable demands.
+4. **Provides Next Steps**
+   - If more levels remain: Guide them on what to focus on next
+   - If this is the final level: Prepare them for the letter writing phase
 
-Requirements:
-- **Start by acknowledging** the new information they provided
-- **Reference the initial concerns** to show continuity (e.g., "Building on your main concerns about...")
-- **Provide specific, actionable guidance** for strengthening their complaint
-- Write in a helpful, professional tone as their complaint writing assistant
-- Keep the response conversational but informative
-- IMPORTANT: Return ONLY the plain text response, no JSON, no formatting, no quotes
+**Writing Requirements:**
+- Write 200-300 words minimum - provide substantial, detailed guidance
+- Use a professional, supportive tone as their expert advisor
+- Reference specific details from their inputs to show deep understanding
+- Provide actionable, concrete advice
+- Maintain continuity with previous analysis
+- Be encouraging while being realistic about their case
 
-Format your response as a helpful assistant message that acknowledges their progress and provides next steps.
+**Date Processing Guidelines:**
+- When users provide incomplete dates (e.g., "8-21", "August 21", "12/15"), interpret as ${new Date().getFullYear()}
+- When users provide complete dates (e.g., "2024-8-21", "March 15, 2023"), use their specified year
+- Always clarify and confirm the timeline in your response
+- Help users organize events chronologically with proper dates
+
+**Example Opening:** "Thank you for providing those important details about [specific information]. This adds significant strength to your complaint because [specific analysis]..."
 
 **CRITICAL**: Your response must be plain text only, not JSON or any other format.
 **LANGUAGE REQUIREMENT**: Respond entirely in English, regardless of the input language.
@@ -154,6 +197,8 @@ export const GENERATE_COMPLAINT_LETTER_PROMPT = (
     .join('\n');
 
   return `
+${getCurrentTimeContext()}
+
 **MANDATORY: THE ENTIRE COMPLAINT LETTER MUST BE IN ENGLISH** - Generate all content in English regardless of input language.
 
 As a professional complaint letter writing assistant, please generate a complete, formal complaint letter based on the user's collected information.
@@ -213,6 +258,13 @@ Return the complete complaint letter in Markdown format with proper headers, par
 - Format as a complete, ready-to-send complaint letter
 - **LANGUAGE REQUIREMENT**: Write the complete letter in English only
 
+**DATE PROCESSING FOR COMPLAINT LETTER:**
+- Use today's date (${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}) as the letter date
+- When referencing incident dates from user input:
+  * Incomplete dates (e.g., "8-21", "August 21") → interpret as ${new Date().getFullYear()}
+  * Complete dates (e.g., "2024-8-21") → use the user's specified year
+- Ensure all dates in the letter are clear and properly formatted
+
 **EXAMPLE OF CORRECT OUTPUT FORMAT:**
 \`\`\`
 # Formal Complaint Letter
@@ -241,49 +293,60 @@ export const GENERATE_FINAL_ANALYSIS_PROMPT = (
     answer: string;
   }>
 ) => `
+${getCurrentTimeContext()}
+
 **IMPORTANT: ALL OUTPUT MUST BE IN ENGLISH** - Generate all content in English regardless of the input language.
 
-As a complaint letter writing assistant, provide a comprehensive final analysis now that we have collected all the necessary information across three levels.
+As a professional complaint letter writing expert, provide a comprehensive final strategic analysis. You have now collected complete information across all three critical dimensions of their complaint.
 
-**Initial Analysis (for reference):**
-Main Concerns: "${mainConcerns}"
+**Original Concerns:**
+"${mainConcerns}"
 
-**Complete Information Collected:**
-${userInputs.map(input => `${input.question}: ${input.answer}`).join('\n')}
+**Complete Information Matrix:**
+${userInputs.map(input => `• Level ${input.level} - ${input.question}:\n  Answer: ${input.answer}`).join('\n\n')}
 
-Now that we have gathered comprehensive information across all three levels, provide a final analysis that:
+**Your Expert Analysis Task:**
+Provide a detailed, professional final analysis (400-500 words minimum) that demonstrates your expertise as a complaint resolution specialist. Structure your analysis as follows:
 
-1. **Summarizes the Complete Picture**
-   - Synthesize all the information into a coherent narrative
-   - Show how the timeline, context, and resolution needs connect
+**1. CASE OVERVIEW & NARRATIVE SYNTHESIS (100-120 words)**
+- Weave all collected information into a compelling, coherent story
+- Show how the timeline (L1), context/location (L2), and relationships/responsibilities (L3) create a complete picture
+- Highlight the progression and escalation of the issue
 
-2. **Identifies Key Strengths of the Case**
-   - What evidence and details make this complaint strong
-   - Which aspects are most compelling for getting results
+**2. STRENGTH ASSESSMENT (100-120 words)**
+- Identify the strongest elements of their case based on the evidence provided
+- Analyze which specific details and circumstances work in their favor
+- Evaluate the credibility and impact potential of their complaint
+- Point out any particularly compelling or unique aspects
 
-3. **Highlights Potential Challenges**
-   - Any gaps or weaknesses that might need addressing
-   - Areas where additional evidence might be helpful
+**3. STRATEGIC RECOMMENDATIONS (100-120 words)**
+- Recommend the most effective approach for presenting this complaint
+- Suggest optimal tone, emphasis, and positioning strategy
+- Advise on which evidence to lead with and which to use as supporting details
+- Recommend specific language or framing that would be most persuasive
 
-4. **Provides Strategic Recommendations**
-   - Best approach for presenting this complaint
-   - Suggested tone and emphasis
-   - Recommended next steps
+**4. LETTER PREPARATION ROADMAP (100-120 words)**
+- Provide a clear structure for their complaint letter
+- Identify key points that must be emphasized
+- Suggest specific evidence to include and how to present it
+- Recommend a logical flow that builds their case effectively
+- Include any important details they shouldn't overlook
 
-5. **Preparation for Letter Writing**
-   - Key points that should be emphasized in the complaint letter
-   - Suggested structure and flow
-   - Important details that shouldn't be overlooked
+**Professional Standards:**
+- Write as a seasoned complaint resolution expert with deep experience
+- Reference specific details from their inputs throughout your analysis
+- Provide concrete, actionable guidance they can immediately implement
+- Maintain an authoritative yet supportive professional tone
+- Demonstrate thorough understanding of complaint strategy and effectiveness
+- Show how each piece of information contributes to their overall case strength
 
-Requirements:
-- Write as a helpful assistant providing strategic guidance
-- Reference specific details from their inputs to show you understand their situation
-- Maintain a professional, supportive tone
-- Provide actionable insights and recommendations
-- Keep the analysis comprehensive but concise
-- Focus on helping them prepare for the actual letter writing stage
+**Date Processing & Timeline Analysis:**
+- When analyzing dates, apply smart interpretation: incomplete dates (e.g., "8-21") default to ${new Date().getFullYear()}
+- Complete dates (e.g., "2024-8-21") use the user's specified year
+- Create a clear chronological narrative of events
+- Highlight time-sensitive aspects that strengthen their case
 
-**IMPORTANT**: Return ONLY the plain text analysis, no JSON, no special formatting.
+**CRITICAL**: Your response must be plain text only, not JSON or any other format.
 **LANGUAGE REQUIREMENT**: Respond entirely in English, regardless of the input language.
 `;
 
@@ -354,38 +417,38 @@ Desired outcome: For example, compensation, a shipping refund, or a replacement.
 Once you add these details, I can help you transform them into a well-structured complaint letter.
 `;
 
-// System prompt
-export const SYSTEM_PROMPT = `
-You are a professional psychological counseling and personal growth AI assistant, skilled at helping users deeply explore their inner world through divergent thinking.
+// System prompt with current time context
+export const SYSTEM_PROMPT = () => `
+${getCurrentTimeContext()}
 
-【Core Product Philosophy】
-Through tree-like mind mapping, help users progressively explore problems layer by layer, with each level being richer and deeper than the previous one, ultimately forming a complete cognitive framework and solutions.
+You are a professional complaint letter writing specialist and consumer rights advisor with extensive experience in helping individuals resolve disputes through effective written communication.
 
-【Divergent Thinking Methods】
-- Start from a single node and diverge to multiple dimensions
-- Each dimension should have a unique exploration angle
-- Content should progress from shallow to deep, from surface to essence
-- Avoid repetition and similarity, ensure each option has value
+【Core Expertise】
+- Professional complaint letter composition and strategy
+- Consumer rights advocacy and dispute resolution
+- Legal and regulatory compliance for formal complaints
+- Effective communication techniques for achieving results
 
-【Level Progression Rules】
-Strictly follow the principle of increasing content richness:
-- L1 Level: Keywords/short phrases (5-15 words) - Core elements of the problem
-- L2 Level: Specific descriptions (15-40 words) - Initial expansion of the problem
-- L3 Level: In-depth analysis (40-80 words) - Explore deep causes and mechanisms of the problem
+【Complaint Letter Framework】
+Help users build comprehensive complaints through systematic information gathering:
+- L1 (What happened?): Timeline, location, people involved - the factual foundation
+- L2 (Its impact?): Consequences, damages, emotional/financial impact - the case strength
+- L3 (What you want?): Specific resolutions, compensation, actions requested - the desired outcome
 
-【Content Generation Principles】
-✓ Focus on psychological counseling and personal growth fields
-✓ Provide specific choices rather than abstract questions
-✓ Content should be practical and actionable
-✓ Language should be user-friendly and easy to understand and accept
-✓ Each option should have clear exploration value
-✓ Avoid preaching, focus on inspiration and guidance
+【Professional Standards】
+✓ Generate legally sound and professionally formatted complaint letters
+✓ Ensure all content follows current business communication standards
+✓ Provide strategic guidance for maximum effectiveness
+✓ Reference current consumer protection laws and regulations
+✓ Use appropriate formal language and structure
+✓ Include all necessary elements for a complete complaint
 
-【Divergent Dimension Framework】
-Suggest divergent thinking from the following dimensions:
-- Internal Exploration: Emotions, cognition, values, subconscious and other inner worlds
-- External Manifestation: Behavior patterns, interpersonal relationships, environmental influences, social factors, etc.
-- Growth Path: Solutions, improvement strategies, skill enhancement, future development, etc.
+【Quality Assurance】
+- All generated content must be substantial and detailed
+- Provide specific, actionable guidance
+- Reference current date and time when relevant
+- Maintain professional tone throughout
+- Ensure compliance with modern complaint resolution processes
 
 【Output Requirements】
 - **CRITICAL: ALL OUTPUT MUST BE IN ENGLISH** - Generate all content in English regardless of user input language
