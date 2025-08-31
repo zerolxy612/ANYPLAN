@@ -118,8 +118,8 @@ const generateFallbackContent = (nodeContent: string, nodeLevel: number): Array<
   }
 };
 
-const generateChatBotResponse = (levelCount: number): string => {
-  return CHATBOT_RESPONSE_TEMPLATE(levelCount);
+const generateChatBotResponse = (mainConcerns: string): string => {
+  return CHATBOT_RESPONSE_TEMPLATE(mainConcerns);
 };
 
 // 层级区域布局函数 - 只用于L2及后续层级
@@ -393,6 +393,12 @@ interface CanvasStore {
   renewNode: (nodeId: string, context: NodeContext) => Promise<void>;
   generateInitialNodes: (analysisResult: AIAnalysisResult) => void;
   generateProgressiveComplaintContent: (currentLevel: number) => Promise<void>;
+
+  // 检查L3节点是否都已填写完成
+  checkL3NodesComplete: () => boolean;
+
+  // 生成最终完整投诉信
+  generateFinalComplaintLetter: () => Promise<void>;
 
   // 同层级节点生成
   generateSiblingNode: (nodeId: string, position: 'above' | 'below') => Promise<void>;
@@ -747,21 +753,68 @@ export const useCanvasStore = create<CanvasStore>()(
     // 获取当前选中链路的内容
     getSelectedChainContent: () => {
       const state = get();
-      const { mode, selectedNodesByLevel, nodes, levels, originalPrompt } = state;
+      const { mode, nodes, levels, originalPrompt, mainConcerns } = state;
 
       // 只在写作模式下提供链路内容
       if (mode !== 'writing') {
         return [];
       }
 
-      // 获取高亮的节点列表
+      // 新逻辑：如果L3完成，自动构建完整链路，不再依赖用户选择
+      if (state.checkL3NodesComplete()) {
+        const chainContent: Array<{
+          nodeId: string;
+          content: string;
+          level: number;
+          levelDescription: string;
+        }> = [];
+
+        // 添加原始问题和主要关注点作为L0层级
+        chainContent.push({
+          nodeId: 'original-prompt',
+          content: `${originalPrompt}\n\nMain Concerns: ${mainConcerns}`,
+          level: 0,
+          levelDescription: 'Original Complaint & Analysis'
+        });
+
+        // 自动添加所有L1-L3的用户输入作为链路内容
+        [1, 2, 3].forEach(level => {
+          const levelNodes = nodes.filter(node =>
+            node.data.type === 'keyword' &&
+            node.data.level === level &&
+            node.data.questionText &&
+            node.data.userInput
+          );
+
+          levelNodes.forEach(node => {
+            const keywordData = node.data as KeywordNodeData;
+            const levelInfo = levels.find(l => l.level === level);
+            chainContent.push({
+              nodeId: node.id,
+              content: `${keywordData.questionText}: ${keywordData.userInput}`,
+              level: keywordData.level,
+              levelDescription: levelInfo?.description || `L${keywordData.level}`
+            });
+          });
+        });
+
+        // 按层级排序
+        chainContent.sort((a, b) => a.level - b.level);
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📋 Auto-generated chain content for L3 complete:', chainContent);
+        }
+
+        return chainContent;
+      }
+
+      // 原有逻辑：依赖用户选择（保留作为后备）
       const highlightedNodeIds = state.getHighlightedNodes();
 
       if (highlightedNodeIds.length === 0) {
         return [];
       }
 
-      // 构建链路内容数组
       const chainContent: Array<{
         nodeId: string;
         content: string;
@@ -793,10 +846,6 @@ export const useCanvasStore = create<CanvasStore>()(
 
       // 按层级排序
       chainContent.sort((a, b) => a.level - b.level);
-
-      if (process.env.NODE_ENV === 'development') {
-        console.log('📋 Selected chain content:', chainContent);
-      }
 
       return chainContent;
     },
@@ -891,7 +940,7 @@ export const useCanvasStore = create<CanvasStore>()(
         console.log('🚀 Calling generateInitialNodes...');
         useCanvasStore.getState().generateInitialNodes(analysisResult);
 
-        return generateChatBotResponse(analysisResult.levelCount);
+        return generateChatBotResponse(mainConcerns);
 
       } catch (error) {
         set((state) => {
@@ -1365,17 +1414,30 @@ export const useCanvasStore = create<CanvasStore>()(
 
         console.log('Generated complaint content:', complaintContent);
 
-        // 整体更新chatbot内容，而不是新增
+        // 整体更新AI分析，而不是简单追加
         set((state) => {
-          // 清空现有消息
-          state.chatMessages = [];
-          // 添加新的完整投诉信内容
-          state.chatMessages.push({
-            id: `complaint-${Date.now()}`,
-            type: 'ai',
-            content: complaintContent,
-            isMarkdown: false
-          });
+          // 找到并替换最后一个AI消息，如果没有则添加新的
+          const lastAIMessageIndex = state.chatMessages.map((msg, index) =>
+            msg.type === 'ai' ? index : -1
+          ).filter(index => index !== -1).pop();
+
+          if (lastAIMessageIndex !== undefined) {
+            // 替换最后一个AI消息，实现整体更新
+            state.chatMessages[lastAIMessageIndex] = {
+              id: `complaint-${Date.now()}`,
+              type: 'ai',
+              content: complaintContent,
+              isMarkdown: false
+            };
+          } else {
+            // 如果没有AI消息，则添加新的
+            state.chatMessages.push({
+              id: `complaint-${Date.now()}`,
+              type: 'ai',
+              content: complaintContent,
+              isMarkdown: false
+            });
+          }
         });
 
       } catch (error) {
@@ -1626,11 +1688,16 @@ export const useCanvasStore = create<CanvasStore>()(
         throw new Error('Report generation is only available in writing mode');
       }
 
-      // 获取链路内容
+      // 检查L3是否完成
+      if (!state.checkL3NodesComplete()) {
+        throw new Error('Please complete all L3 questions first');
+      }
+
+      // 获取链路内容（现在会自动构建完整链路）
       const chainContent = state.getSelectedChainContent();
 
       if (chainContent.length === 0) {
-        throw new Error('Please select a complete thinking chain first');
+        throw new Error('Unable to generate report - missing required information');
       }
 
       set((state) => {
@@ -1861,5 +1928,109 @@ export const useCanvasStore = create<CanvasStore>()(
     clearChatMessages: () => set((state) => {
       state.chatMessages = [];
     }),
+
+    // 检查L3节点是否都已填写完成
+    checkL3NodesComplete: () => {
+      const state = get();
+      const l3Nodes = state.nodes.filter(node =>
+        node.data.type === 'keyword' &&
+        node.data.level === 3 &&
+        node.data.questionText
+      );
+
+      // 检查是否有3个L3节点，且都有用户输入
+      return l3Nodes.length === 3 &&
+             l3Nodes.every(node => {
+               const keywordData = node.data as KeywordNodeData;
+               return keywordData.userInput &&
+                      typeof keywordData.userInput === 'string' &&
+                      keywordData.userInput.trim().length > 0;
+             });
+    },
+
+    // 生成最终完整投诉信
+    generateFinalComplaintLetter: async () => {
+      console.log('🔄 Generating final complaint letter...');
+
+      set((state) => {
+        state.isChatbotGenerating = true;
+      });
+
+      try {
+        const state = get();
+        const { mainConcerns, nodes } = state;
+
+        if (!mainConcerns) {
+          throw new Error('No main concerns available');
+        }
+
+        // 收集所有层级的用户输入
+        const userInputs: Array<{
+          level: number;
+          question: string;
+          answer: string;
+        }> = [];
+
+        // 收集L1、L2、L3的所有用户输入
+        [1, 2, 3].forEach(level => {
+          const levelNodes = nodes.filter(node =>
+            node.data.type === 'keyword' &&
+            node.data.level === level &&
+            node.data.questionText &&
+            node.data.userInput
+          );
+
+          levelNodes.forEach(node => {
+            const keywordData = node.data as KeywordNodeData;
+            if (keywordData.questionText && keywordData.userInput) {
+              userInputs.push({
+                level: keywordData.level,
+                question: keywordData.questionText,
+                answer: keywordData.userInput
+              });
+            }
+          });
+        });
+
+        if (userInputs.length === 0) {
+          throw new Error('No user inputs available');
+        }
+
+        console.log('Generating final complaint with all inputs:', userInputs);
+
+        // 调用AI生成最终分析
+        const finalAnalysis = await geminiService.generateFinalComplaintLetter(
+          mainConcerns,
+          userInputs
+        );
+
+        console.log('Generated final analysis:', finalAnalysis);
+
+        // 添加最终分析内容
+        set((state) => {
+          state.chatMessages.push({
+            id: `final-analysis-${Date.now()}`,
+            type: 'ai',
+            content: finalAnalysis,
+            isMarkdown: false // 使用普通文本格式显示分析
+          });
+        });
+
+      } catch (error) {
+        console.error('Failed to generate final analysis:', error);
+        set((state) => {
+          state.chatMessages.push({
+            id: `error-${Date.now()}`,
+            type: 'ai',
+            content: 'Sorry, I encountered an error while generating your final analysis. Please try again.',
+            isMarkdown: false
+          });
+        });
+      } finally {
+        set((state) => {
+          state.isChatbotGenerating = false;
+        });
+      }
+    },
   }))
 );

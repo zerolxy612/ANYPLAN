@@ -16,6 +16,7 @@ import {
   GENERATE_REPORT_PROMPT,
   EXTRACT_MAIN_CONCERNS_PROMPT,
   GENERATE_PROGRESSIVE_COMPLAINT_PROMPT,
+  GENERATE_FINAL_ANALYSIS_PROMPT,
   SYSTEM_PROMPT
 } from './prompts';
 
@@ -275,6 +276,42 @@ class GeminiService {
   // 获取当前配置
   getConfig(): AIServiceConfig {
     return { ...this.config };
+  }
+
+  // 生成最终分析
+  async generateFinalComplaintLetter(
+    mainConcerns: string,
+    userInputs: Array<{
+      level: number;
+      question: string;
+      answer: string;
+    }>
+  ): Promise<string> {
+    try {
+      if (!mainConcerns.trim()) {
+        throw this.createError('API_ERROR', 'Main concerns cannot be empty');
+      }
+
+      if (!userInputs || userInputs.length === 0) {
+        throw this.createError('API_ERROR', 'User inputs cannot be empty');
+      }
+
+      const prompt = GENERATE_FINAL_ANALYSIS_PROMPT(mainConcerns, userInputs);
+      const response = await this.sendRequest(prompt);
+
+      const finalAnalysis = response.trim();
+
+      if (!finalAnalysis) {
+        throw new Error('Empty final analysis generated');
+      }
+
+      return finalAnalysis;
+    } catch (error) {
+      if (error instanceof Error && 'code' in error) {
+        throw error;
+      }
+      throw this.createError('API_ERROR', error instanceof Error ? error.message : 'Final analysis generation failed');
+    }
   }
 }
 

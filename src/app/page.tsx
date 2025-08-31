@@ -6,7 +6,7 @@ import ChatPanel from '@/components/sidebar/ChatPanel';
 import { useCanvasStore } from '@/store/canvas.store';
 
 export default function Home() {
-  const { mode, setMode } = useCanvasStore();
+  const { mode, setMode, checkL3NodesComplete } = useCanvasStore();
 
   return (
     <div className="canvas-page">
@@ -29,8 +29,9 @@ export default function Home() {
                 Ask Sue
               </button>
               <button
-                className={`mode-button ${mode === 'writing' ? 'active' : ''}`}
-                onClick={() => setMode('writing')}
+                className={`mode-button ${mode === 'writing' ? 'active' : ''} ${!checkL3NodesComplete() ? 'disabled' : ''}`}
+                onClick={() => checkL3NodesComplete() && setMode('writing')}
+                disabled={!checkL3NodesComplete()}
               >
                 <span className="mode-icon">✍️</span>
                 Generate
@@ -107,8 +108,19 @@ export default function Home() {
           color: #000000;
         }
 
-        .mode-button:hover:not(.active) {
+        .mode-button:hover:not(.active):not(.disabled) {
           background-color: #2a2830;
+        }
+
+        .mode-button.disabled {
+          background-color: #18161a;
+          color: #666666;
+          cursor: not-allowed;
+          opacity: 0.5;
+        }
+
+        .mode-button.disabled:hover {
+          background-color: #18161a;
         }
 
         .mode-icon {

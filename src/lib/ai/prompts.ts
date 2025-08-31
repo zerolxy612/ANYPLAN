@@ -102,35 +102,95 @@ export const GENERATE_PROGRESSIVE_COMPLAINT_PROMPT = (
 ) => `
 **IMPORTANT: ALL OUTPUT MUST BE IN ENGLISH** - Generate all content in English regardless of the input language.
 
-As a complaint letter writing assistant, help the user build their complaint letter progressively. Based on the information they've provided so far, generate the appropriate section of their complaint letter.
+As a complaint letter writing assistant, help the user build their complaint letter progressively. Based on the information they've provided so far, generate an update that builds upon our initial analysis.
 
+**Initial Analysis (for reference):**
 Main Concerns: "${mainConcerns}"
 
-User has provided the following information:
+**New Information Provided:**
 ${userInputs.map(input => `${input.question}: ${input.answer}`).join('\n')}
 
 Current Level: L${currentLevel}
 
-Based on the level, generate the appropriate complaint letter content:
+Generate a response that:
+1. **Acknowledges the new information** they've provided
+2. **References the initial concerns** to maintain continuity
+3. **Provides specific guidance** for the next steps
 
-**For L1 (Basic Information)**: Generate an opening paragraph that introduces the complaint with the basic details (time, place, people involved).
+Based on the level, provide appropriate guidance:
 
-**For L2 (Impact Assessment)**: Add content about how the issue affected the user emotionally, the inconvenience/harm caused, and why it's important to them.
+**For L1 (Basic Information)**: Acknowledge their timeline details and guide them on organizing the sequence of events clearly.
 
-**For L3 (Resolution Request)**: Add content about what the user wants the company to do, timeline expectations, and alternative solutions.
+**For L2 (Impact Assessment)**: Acknowledge their location/context details and help them articulate the broader impact and consequences.
+
+**For L3 (Resolution Request)**: Acknowledge their relationship/responsibility details and guide them on formulating clear, actionable demands.
 
 Requirements:
-- Write in professional, clear English suitable for a formal complaint letter
-- Use the user's provided information naturally in the text
-- Make it sound personal but professional
-- Keep each section concise but complete
-- Build upon previous sections logically
-- Use appropriate complaint letter tone and structure
-- IMPORTANT: Return ONLY the plain text paragraph, no JSON, no formatting, no quotes
+- **Start by acknowledging** the new information they provided
+- **Reference the initial concerns** to show continuity (e.g., "Building on your main concerns about...")
+- **Provide specific, actionable guidance** for strengthening their complaint
+- Write in a helpful, professional tone as their complaint writing assistant
+- Keep the response conversational but informative
+- IMPORTANT: Return ONLY the plain text response, no JSON, no formatting, no quotes
 
-Format your response as a well-structured paragraph that can be part of a formal complaint letter.
+Format your response as a helpful assistant message that acknowledges their progress and provides next steps.
 
 **CRITICAL**: Your response must be plain text only, not JSON or any other format.
+**LANGUAGE REQUIREMENT**: Respond entirely in English, regardless of the input language.
+`;
+
+// Generate final analysis based on all collected information
+export const GENERATE_FINAL_ANALYSIS_PROMPT = (
+  mainConcerns: string,
+  userInputs: Array<{
+    level: number;
+    question: string;
+    answer: string;
+  }>
+) => `
+**IMPORTANT: ALL OUTPUT MUST BE IN ENGLISH** - Generate all content in English regardless of the input language.
+
+As a complaint letter writing assistant, provide a comprehensive final analysis now that we have collected all the necessary information across three levels.
+
+**Initial Analysis (for reference):**
+Main Concerns: "${mainConcerns}"
+
+**Complete Information Collected:**
+${userInputs.map(input => `${input.question}: ${input.answer}`).join('\n')}
+
+Now that we have gathered comprehensive information across all three levels, provide a final analysis that:
+
+1. **Summarizes the Complete Picture**
+   - Synthesize all the information into a coherent narrative
+   - Show how the timeline, context, and resolution needs connect
+
+2. **Identifies Key Strengths of the Case**
+   - What evidence and details make this complaint strong
+   - Which aspects are most compelling for getting results
+
+3. **Highlights Potential Challenges**
+   - Any gaps or weaknesses that might need addressing
+   - Areas where additional evidence might be helpful
+
+4. **Provides Strategic Recommendations**
+   - Best approach for presenting this complaint
+   - Suggested tone and emphasis
+   - Recommended next steps
+
+5. **Preparation for Letter Writing**
+   - Key points that should be emphasized in the complaint letter
+   - Suggested structure and flow
+   - Important details that shouldn't be overlooked
+
+Requirements:
+- Write as a helpful assistant providing strategic guidance
+- Reference specific details from their inputs to show you understand their situation
+- Maintain a professional, supportive tone
+- Provide actionable insights and recommendations
+- Keep the analysis comprehensive but concise
+- Focus on helping them prepare for the actual letter writing stage
+
+**IMPORTANT**: Return ONLY the plain text analysis, no JSON, no special formatting.
 **LANGUAGE REQUIREMENT**: Respond entirely in English, regardless of the input language.
 `;
 
@@ -189,9 +249,16 @@ Important Reminders:
 - **LANGUAGE REQUIREMENT**: Generate all node content in English only
 `;
 
-// ChatBot response template
-export const CHATBOT_RESPONSE_TEMPLATE = (levelCount: number) => `
-I've built a ${levelCount}-level psychological growth exploration framework for you. Each level will progressively deepen to help you better understand and grow. Click on nodes to expand more options, or you can input your own thoughts to guide the exploration direction.
+// ChatBot response template for complaint letter assistance
+export const CHATBOT_RESPONSE_TEMPLATE = (mainConcerns: string) => `
+I can see your main concerns:
+${mainConcerns}
+
+To make your complaint letter stronger, let's organize these points clearly. On the canvas panel, please add:
+Event timeline: When you ordered, what was promised, and when it actually arrived.
+Evidence: Photos of the damaged box, order confirmation, or delivery records.
+Desired outcome: For example, compensation, a shipping refund, or a replacement.
+Once you add these details, I can help you transform them into a well-structured complaint letter.
 `;
 
 // System prompt

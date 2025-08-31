@@ -28,7 +28,9 @@ const ChatPanel = () => {
     chatMessages,
     addChatMessage,
     clearChatMessages,
-    isChatbotGenerating
+    isChatbotGenerating,
+    checkL3NodesComplete,
+    generateFinalComplaintLetter
   } = useCanvasStore();
 
   // Dynamically set greeting based on time
@@ -224,19 +226,28 @@ const ChatPanel = () => {
         </div>
       )}
 
-      {/* 问候文本或层级信息 */}
+      {/* 问候文本 */}
       <div className={`greeting-section ${chatMessages.length > 0 ? 'compact' : ''}`}>
-        {chatMessages.length === 0 ? (
+        {chatMessages.length === 0 && (
           <div className="text-block">
             <h2 className="greeting-title">{displayGreeting},</h2>
             <p className="greeting-subtitle">How can I help you?</p>
           </div>
-        ) : levels.length > 0 && (
-          <div className="levels-info">
-            <p className="levels-text">Generated {levels.length}-level exploration framework</p>
-            {mode === 'writing' && getSelectedChainContent().length > 0 && (
-              <p className="chain-status">✅ Selected {getSelectedChainContent().length}-level thinking chain, ready to generate analysis report</p>
-            )}
+        )}
+
+        {/* L3完成后的分析按钮 */}
+        {checkL3NodesComplete() && (
+          <div className="final-complaint-section">
+            <button
+              className={`final-complaint-button ${isChatbotGenerating ? 'disabled' : ''}`}
+              onClick={generateFinalComplaintLetter}
+              disabled={isChatbotGenerating}
+            >
+              {isChatbotGenerating ? '⏳ Analyzing...' : '🔍 Final Analyze'}
+            </button>
+            <p className="final-complaint-hint">
+              All information collected! Click to get final analysis and recommendations.
+            </p>
           </div>
         )}
 
@@ -737,6 +748,54 @@ const ChatPanel = () => {
           .greeting-subtitle {
             font-size: 16px;
           }
+        }
+
+        /* L3完成后的生成按钮样式 */
+        .final-complaint-section {
+          margin-bottom: 20px;
+          padding: 16px;
+          background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+          border-radius: 12px;
+          border: 1px solid #10b981;
+          text-align: center;
+        }
+
+        .final-complaint-button {
+          width: 100%;
+          padding: 12px 20px;
+          background: #10b981;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .final-complaint-button:hover:not(.disabled) {
+          background: #059669;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .final-complaint-button.disabled {
+          background: #6b7280;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+
+        .final-complaint-hint {
+          margin: 12px 0 0 0;
+          color: #d1fae5;
+          font-size: 14px;
+          font-weight: 500;
+        }
         }
       `}</style>
     </div>
