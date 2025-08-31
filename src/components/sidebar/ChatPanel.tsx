@@ -30,7 +30,8 @@ const ChatPanel = () => {
     clearChatMessages,
     isChatbotGenerating,
     checkL3NodesComplete,
-    generateFinalComplaintLetter
+    generateFinalComplaintLetter,
+    hasFinalAnalyzed
   } = useCanvasStore();
 
   // Dynamically set greeting based on time
@@ -263,11 +264,17 @@ const ChatPanel = () => {
                   onClick={generateFinalComplaintLetter}
                   disabled={isChatbotGenerating}
                 >
-                  {isChatbotGenerating ? '⏳ Analyzing...' : '🔍 Final Analyze'}
+                  {isChatbotGenerating ? '⏳ Analyzing...' : (hasFinalAnalyzed ? '🔍 Analyze Again' : '🔍 Final Analyze')}
                 </button>
                 <p className="final-complaint-hint">
                   All information collected! Click to get final analysis and recommendations.
                 </p>
+                {/* 显示引导提示 - 只在已完成final analyze后显示 */}
+                {hasFinalAnalyzed && (
+                  <p className="generate-guide-hint">
+                    ✅ Analysis complete! You can now click the "Generate" button above to create your professional complaint letter.
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -848,6 +855,18 @@ const ChatPanel = () => {
           color: #d1fae5;
           font-size: 14px;
           font-weight: 500;
+        }
+
+        .generate-guide-hint {
+          margin: 16px 0 0 0;
+          color: #65f0a3;
+          font-size: 14px;
+          font-weight: 600;
+          padding: 12px;
+          background: rgba(101, 240, 163, 0.1);
+          border-radius: 8px;
+          border: 1px solid rgba(101, 240, 163, 0.3);
+          text-align: center;
         }
         }
       `}</style>

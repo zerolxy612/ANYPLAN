@@ -310,6 +310,9 @@ interface CanvasStore {
   }>;
   isChatbotGenerating: boolean;
 
+  // Final analyze state
+  hasFinalAnalyzed: boolean;
+
   // Mode management
   mode: 'inquiry' | 'writing';
 
@@ -482,6 +485,9 @@ export const useCanvasStore = create<CanvasStore>()(
     // Chatbot messages
     chatMessages: [],
     isChatbotGenerating: false,
+
+    // Final analyze state
+    hasFinalAnalyzed: false,
 
     // Mode management
     mode: 'inquiry',
@@ -1668,6 +1674,7 @@ export const useCanvasStore = create<CanvasStore>()(
       state.currentLevel = 1;
       state.originalPrompt = '';
       state.isAIGenerating = false;
+      state.hasFinalAnalyzed = false;
 
       // 重置模式
       state.mode = 'inquiry';
@@ -2044,13 +2051,8 @@ export const useCanvasStore = create<CanvasStore>()(
             isMarkdown: false // 使用普通文本格式显示分析
           });
 
-          // 添加提示用户可以生成完整投诉信的消息
-          state.chatMessages.push({
-            id: `generate-hint-${Date.now()}`,
-            type: 'ai',
-            content: '✅ Analysis complete! You can now click the "Generate" button above to create your professional complaint letter.',
-            isMarkdown: false
-          });
+          // 设置已完成final analyze状态
+          state.hasFinalAnalyzed = true;
         });
 
       } catch (error) {
