@@ -2,9 +2,19 @@
 
 import React from 'react';
 import { useCanvasStore } from '@/store/canvas.store';
+import { CanvasNode } from '@/types/canvas';
 
 interface ButtonToNodeConnectionsProps {
   viewport?: { x: number; y: number; zoom: number };
+}
+
+interface Connection {
+  buttonX: number;
+  buttonY: number;
+  childNodes: CanvasNode[];
+  type: 'original' | 'node';
+  parentLevel: number;
+  parentNode?: CanvasNode;
 }
 
 const ButtonToNodeConnections: React.FC<ButtonToNodeConnectionsProps> = ({ viewport }) => {
@@ -21,7 +31,7 @@ const ButtonToNodeConnections: React.FC<ButtonToNodeConnectionsProps> = ({ viewp
   // 不再需要获取选中节点，因为我们要显示所有连线
 
   // 收集所有需要绘制连线的情况
-  const connections = [];
+  const connections: Connection[] = [];
 
   // 1. 处理原始节点的连线（原始节点 → L1节点）
   if (levels.length > 0 && originalPrompt) {
@@ -57,15 +67,20 @@ const ButtonToNodeConnections: React.FC<ButtonToNodeConnectionsProps> = ({ viewp
     nodesByLevel.get(level).push(node);
   });
 
-  // 为每个有子节点的节点创建连线
-  nodes.forEach(parentNode => {
-    // 查找该节点的子节点
-    const childNodes = nodes.filter(n => n.data.parentId === parentNode.id);
+  // 新逻辑：从每个层级的中间节点连接到下一层级的所有节点
+  // 遍历每个层级（除了最后一层）
+  for (const [currentLevel, currentLevelNodes] of nodesByLevel.entries()) {
+    // 检查是否有下一层级
+    const nextLevel = currentLevel + 1;
+    const nextLevelNodes = nodesByLevel.get(nextLevel);
 
-    if (childNodes.length > 0) {
-      // 计算"生成下一层级"按钮的位置
-      const nextLevelBoundaryX = 400 + parentNode.data.level * 300;
-      const nodeCanvasY = parentNode.position.y;
+    if (nextLevelNodes && nextLevelNodes.length > 0 && currentLevelNodes.length >= 2) {
+      // 获取当前层级的中间节点（索引为1的节点）
+      const middleNode = currentLevelNodes[1];
+
+      // 计算"生成下一层级"按钮的位置（基于中间节点）
+      const nextLevelBoundaryX = 400 + middleNode.data.level * 300;
+      const nodeCanvasY = middleNode.position.y;
 
       const buttonX = nextLevelBoundaryX * zoom + offsetX - 16;
       const buttonY = nodeCanvasY * zoom + offsetY + 5;
@@ -73,13 +88,13 @@ const ButtonToNodeConnections: React.FC<ButtonToNodeConnectionsProps> = ({ viewp
       connections.push({
         buttonX,
         buttonY,
-        childNodes,
+        childNodes: nextLevelNodes, // 连接到下一层级的所有节点
         type: 'node',
-        parentLevel: parentNode.data.level,
-        parentNode
+        parentLevel: middleNode.data.level,
+        parentNode: middleNode
       });
     }
-  });
+  }
 
   // 调试信息（开发环境）
   if (process.env.NODE_ENV === 'development') {
@@ -116,7 +131,7 @@ const ButtonToNodeConnections: React.FC<ButtonToNodeConnectionsProps> = ({ viewp
         }}
       >
         {connections.map((connection) =>
-          connection.childNodes.map((childNode, childIndex) => {
+          connection.childNodes.map((childNode: CanvasNode, childIndex: number) => {
             // 计算子节点位置（节点左边缘中心）
             const childX = childNode.position.x * zoom + offsetX; // 节点左边缘
             const childY = childNode.position.y * zoom + offsetY + 25; // 节点垂直中心
