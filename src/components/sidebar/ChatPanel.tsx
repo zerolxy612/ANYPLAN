@@ -184,32 +184,52 @@ const ChatPanel = () => {
           {/* 消息历史 */}
           {(chatMessages.length > 0 || isChatbotGenerating) && (
             <div className="messages-section">
-              {chatMessages.map((message) => (
-                <div key={message.id} className={`message ${message.type}`}>
-                  <div className={`message-content ${message.isMarkdown ? 'markdown-content' : ''}`}>
-                    {message.isMarkdown ? (
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          h1: ({children}) => <h1 className="markdown-h1">{children}</h1>,
-                          h2: ({children}) => <h2 className="markdown-h2">{children}</h2>,
-                          h3: ({children}) => <h3 className="markdown-h3">{children}</h3>,
-                          p: ({children}) => <p className="markdown-p">{children}</p>,
-                          strong: ({children}) => <strong className="markdown-strong">{children}</strong>,
-                          ul: ({children}) => <ul className="markdown-ul">{children}</ul>,
-                          ol: ({children}) => <ol className="markdown-ol">{children}</ol>,
-                          li: ({children}) => <li className="markdown-li">{children}</li>,
-                        }}
-                      >
-                        {message.content}
-                      </ReactMarkdown>
-                    ) : (
-                      message.content
-                    )}
+              {chatMessages.map((message, index) => {
+                // 如果是最后一个AI消息且正在生成中，显示loading状态
+                const isLastAIMessage = message.type === 'ai' &&
+                  index === chatMessages.length - 1 &&
+                  isChatbotGenerating;
+
+                return (
+                  <div key={message.id} className={`message ${message.type}`}>
+                    <div className={`message-content ${message.isMarkdown ? 'markdown-content' : ''}`}>
+                      {isLastAIMessage ? (
+                        // 显示loading状态替换最后一个AI消息
+                        <>
+                          <div className="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                          </div>
+                          <span className="loading-text" style={{ marginLeft: '10px', fontSize: '14px', color: '#888' }}>
+                            Updating your complaint letter...
+                          </span>
+                        </>
+                      ) : message.isMarkdown ? (
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            h1: ({children}) => <h1 className="markdown-h1">{children}</h1>,
+                            h2: ({children}) => <h2 className="markdown-h2">{children}</h2>,
+                            h3: ({children}) => <h3 className="markdown-h3">{children}</h3>,
+                            p: ({children}) => <p className="markdown-p">{children}</p>,
+                            strong: ({children}) => <strong className="markdown-strong">{children}</strong>,
+                            ul: ({children}) => <ul className="markdown-ul">{children}</ul>,
+                            ol: ({children}) => <ol className="markdown-ol">{children}</ol>,
+                            li: ({children}) => <li className="markdown-li">{children}</li>,
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      ) : (
+                        message.content
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-              {(isAIGenerating || isChatbotGenerating) && (
+                );
+              })}
+              {/* 只有在没有消息但正在生成时才显示独立的loading */}
+              {chatMessages.length === 0 && (isAIGenerating || isChatbotGenerating) && (
                 <div className="message ai">
                   <div className="message-content">
                     <div className="typing-indicator">
@@ -217,11 +237,9 @@ const ChatPanel = () => {
                       <span></span>
                       <span></span>
                     </div>
-                    {isChatbotGenerating && (
-                      <span className="loading-text" style={{ marginLeft: '10px', fontSize: '14px', color: '#888' }}>
-                        Generating your complaint letter...
-                      </span>
-                    )}
+                    <span className="loading-text" style={{ marginLeft: '10px', fontSize: '14px', color: '#888' }}>
+                      {isChatbotGenerating ? 'Generating your complaint letter...' : 'Analyzing your input...'}
+                    </span>
                   </div>
                 </div>
               )}
