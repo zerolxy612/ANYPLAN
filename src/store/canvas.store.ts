@@ -2043,6 +2043,14 @@ export const useCanvasStore = create<CanvasStore>()(
             content: finalAnalysis,
             isMarkdown: false // 使用普通文本格式显示分析
           });
+
+          // 添加提示用户可以生成完整投诉信的消息
+          state.chatMessages.push({
+            id: `generate-hint-${Date.now()}`,
+            type: 'ai',
+            content: '✅ Analysis complete! You can now click the "Generate" button above to create your professional complaint letter.',
+            isMarkdown: false
+          });
         });
 
       } catch (error) {

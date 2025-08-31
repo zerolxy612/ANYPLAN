@@ -338,7 +338,7 @@ const ChatPanel = () => {
       <style jsx>{`
         .chat-panel {
           height: 100%;
-          padding: 20px;
+          padding: 16px; /* 减少padding以增加可用空间 */
           flex: 1;
           display: flex;
           flex-direction: column;
@@ -364,9 +364,35 @@ const ChatPanel = () => {
           flex-direction: column;
           gap: 12px;
           padding: 16px 0;
-          margin-bottom: 16px; /* 与greeting-section的间距 */
+          margin-bottom: 8px; /* 减少与greeting-section的间距 */
           min-height: 0; /* 关键：允许收缩 */
-          max-height: calc(100vh - 300px); /* 限制最大高度，为输入栏预留空间 */
+          max-height: calc(100vh - 120px); /* 最大化利用空间，只为输入区域预留必要空间 */
+        }
+
+        /* 自定义滚动条样式 */
+        .messages-section::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .messages-section::-webkit-scrollbar-track {
+          background: #2a2830;
+          border-radius: 4px;
+        }
+
+        .messages-section::-webkit-scrollbar-thumb {
+          background: #65f0a3;
+          border-radius: 4px;
+          opacity: 0.8;
+        }
+
+        .messages-section::-webkit-scrollbar-thumb:hover {
+          background: #52d18a;
+        }
+
+        /* Firefox滚动条样式 */
+        .messages-section {
+          scrollbar-width: thin;
+          scrollbar-color: #65f0a3 #2a2830;
         }
 
         .message {
@@ -448,7 +474,7 @@ const ChatPanel = () => {
           gap: 16px;
           justify-content: flex-end;
           flex-shrink: 0; /* 防止被挤压 */
-          flex: 1; /* 在有消息时占据剩余空间 */
+          flex: 0; /* 在有消息时不占据额外空间，让messages-section充分利用空间 */
         }
 
         .greeting-section:not(.compact) {

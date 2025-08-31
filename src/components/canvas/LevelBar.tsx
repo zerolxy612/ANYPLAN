@@ -130,13 +130,30 @@ const LevelBar: React.FC<LevelBarProps> = ({
       overflow: 'hidden'
     }}>
 
+      {/* 标题文本 - 始终显示 */}
+      <div style={{
+        position: 'absolute',
+        left: '20px',
+        top: '0',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        color: '#666666',
+        fontSize: '14px',
+        fontWeight: '500',
+        letterSpacing: '0.5px',
+        opacity: 0.8,
+        zIndex: 1
+      }}>
+        SueMind | Power Your Complaint
+      </div>
 
       {/* 层级按钮容器 */}
       <div style={{
         position: 'absolute',
-        left: '20px', // 从左侧开始，不再需要为主题标签留空间
+        left: '250px', // 为标题文本留出空间
         top: '0',
-        right: '20px', // 不再需要为滑动按钮留空间
+        right: '20px',
         height: '100%',
         display: 'flex',
         alignItems: 'center',
@@ -157,13 +174,13 @@ const LevelBar: React.FC<LevelBarProps> = ({
           const transformedWidth = canvasLevelWidth * zoom;
 
           // 转换为相对于LevelBar容器的位置
-          // LevelBar容器从20px开始，所以需要减去20px
+          // LevelBar容器从250px开始，所以需要减去250px
           // 让按钮居中对齐到对应的画布区域
           const buttonWidth = 140; // 增加宽度到140px，适合显示完整的英文问题文本
-          const buttonLeft = transformedX - 20 + (transformedWidth - buttonWidth) / 2; // 居中对齐，调整为新的容器起始位置
+          const buttonLeft = transformedX - 250 + (transformedWidth - buttonWidth) / 2; // 居中对齐，调整为新的容器起始位置
 
           // 如果按钮超出可视范围，则不显示
-          const containerWidth = typeof window !== 'undefined' ? window.innerWidth - 20 - 20 : 800; // 层级按钮容器的实际可用宽度
+          const containerWidth = typeof window !== 'undefined' ? window.innerWidth - 250 - 20 : 550; // 层级按钮容器的实际可用宽度
           if (buttonLeft > containerWidth || buttonLeft + buttonWidth < 0) {
             return null;
           }
