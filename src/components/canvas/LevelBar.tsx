@@ -314,7 +314,7 @@ const LevelBar: React.FC<LevelBarProps> = ({
           // 转换为相对于LevelBar容器的位置
           // LevelBar容器从120px开始，所以需要减去120px
           // 让按钮居中对齐到对应的画布区域
-          const buttonWidth = 100; // 固定宽度100px，适合显示约5个中文字符
+          const buttonWidth = 140; // 增加宽度到140px，适合显示完整的英文问题文本
           const buttonLeft = transformedX - 120 + (transformedWidth - buttonWidth) / 2; // 居中对齐，不使用Math.max
 
           // 如果按钮超出可视范围，则不显示
@@ -385,9 +385,13 @@ const LevelBar: React.FC<LevelBarProps> = ({
                 color: level.level === currentLevel ? '#000000' : '#ffffff',
                 flex: 1,
                 textAlign: 'left',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                // 原来的省略号逻辑（因为现在是固定文本，不需要省略号了）
+                // overflow: 'hidden',
+                // textOverflow: 'ellipsis',
+                // whiteSpace: 'nowrap',
+                // 新的完整显示逻辑
+                whiteSpace: 'pre-wrap', // 支持换行显示完整内容
+                wordBreak: 'break-word', // 长单词自动换行
                 fontSize: '10px',
                 minWidth: 0 // 确保flex子元素可以收缩
               }}>

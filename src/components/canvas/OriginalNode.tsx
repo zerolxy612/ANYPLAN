@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useCanvasStore } from '@/store/canvas.store';
 
 interface OriginalNodeProps {
@@ -17,7 +17,6 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
   viewport
 }) => {
   const { generateChildren, loading, originalPrompt, mainConcerns } = useCanvasStore();
-  const [isExpanded, setIsExpanded] = useState(false); // 展开状态
   const zoom = viewport?.zoom || 1;
   const offsetX = viewport?.x || 0;
   const offsetY = viewport?.y || 0;
@@ -61,7 +60,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
   // 原始节点位置（基于生成按钮位置反推，确保整体协调）
   const nodeWidth = 160;
   const baseNodeHeight = 80;
-  const nodeHeight = isExpanded ? Math.max(baseNodeHeight, 120) : baseNodeHeight; // 展开时至少120px，收起时80px
+  const nodeHeight = baseNodeHeight; // 固定高度80px
   const nodeX = l1BoundaryX - nodeWidth - 40;  // 距离分界线40px
   const nodeY = canvasCenterY - nodeHeight / 2;  // 垂直居中
 
@@ -172,7 +171,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
           left: `${transformedX}px`,
           top: `${transformedY}px`,
           width: `${transformedWidth}px`,
-          height: isExpanded ? 'auto' : `${transformedHeight}px`,
+          height: 'auto', // 自动高度以适应内容
         minHeight: `${transformedHeight}px`,
           backgroundColor: '#2a2a2c',
           border: '2px solid #404040',
@@ -200,23 +199,18 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
 
         {/* 内容 */}
         <div
-          onDoubleClick={() => setIsExpanded(!isExpanded)}
           style={{
-            fontSize: `${14 * zoom}px`,  // 稍微减小字体
+            fontSize: `${12 * zoom}px`,
             color: '#ffffff',
             fontWeight: '600',
             textAlign: 'center',
-            lineHeight: '1.4',
-            overflow: isExpanded ? 'visible' : 'hidden',
-            textOverflow: isExpanded ? 'unset' : 'ellipsis',
-            display: isExpanded ? 'block' : '-webkit-box',
-            WebkitLineClamp: isExpanded ? 'unset' : 4,
-            WebkitBoxOrient: isExpanded ? 'unset' : 'vertical',
-            maxHeight: isExpanded ? 'none' : `${14 * zoom * 1.4 * 4}px`,
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
+            lineHeight: '1.3',
+            padding: '4px',
+            width: '100%',
+            boxSizing: 'border-box',
+            whiteSpace: 'pre-wrap', // 直接显示完整内容，支持换行
+            wordBreak: 'break-word'
           }}
-          title={isExpanded ? "Double-click to collapse" : "Double-click to expand full content"}
         >
           {mainConcerns || content}
         </div>
