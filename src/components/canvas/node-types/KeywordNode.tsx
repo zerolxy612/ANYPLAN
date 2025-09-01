@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useRef } from 'react';
 import { NodeProps } from '@xyflow/react';
 import { KeywordNodeData } from '@/types/canvas';
 import { useCanvasStore } from '@/store/canvas.store';
@@ -20,6 +20,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const [editValue, setEditValue] = useState(data.content);
   const [hideButtonTimer, setHideButtonTimer] = useState<NodeJS.Timeout | null>(null);
   const [isComposing, setIsComposing] = useState(false); // 中文输入状态
+  const textareaRef = useRef<HTMLTextAreaElement>(null); // textarea引用
   const {
     generateChildren,
     renewNode,
@@ -202,6 +203,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
 
   // 处理键盘事件
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // 中文输入法候选确认阶段不拦截Enter/Escape
+    if (isComposing) return;
     if (e.key === 'Enter') {
       e.preventDefault();
       handleSaveEdit();
@@ -267,18 +270,23 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
             {/* 用户输入区域 */}
             <div className="user-input-area">
               <textarea
-                value={data.userInput || ''}
-                onChange={(e) => {
-                  // 使用store的方法更新节点数据
-                  useCanvasStore.setState((state) => {
-                    const nodeIndex = state.nodes.findIndex(n => n.id === data.id);
-                    if (nodeIndex !== -1 && state.nodes[nodeIndex].data) {
-                      (state.nodes[nodeIndex].data as KeywordNodeData).userInput = e.target.value;
-                    }
-                  });
+                ref={textareaRef}
+                defaultValue={data.userInput || ''}
+                onInput={(e) => {
+                  // 使用onInput而不是onChange，减少重新渲染
+                  const target = e.target as HTMLTextAreaElement;
+
+                  // 只在非中文输入时立即更新状态
+                  if (!isComposing) {
+                    useCanvasStore.setState((state) => {
+                      const nodeIndex = state.nodes.findIndex(n => n.id === data.id);
+                      if (nodeIndex !== -1 && state.nodes[nodeIndex].data) {
+                        (state.nodes[nodeIndex].data as KeywordNodeData).userInput = target.value;
+                      }
+                    });
+                  }
 
                   // 自动调整高度
-                  const target = e.target as HTMLTextAreaElement;
                   target.style.height = 'auto';
                   target.style.height = Math.min(target.scrollHeight, 120) + 'px';
                 }}
@@ -290,24 +298,34 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
                   // 防止某些快捷键被画布拦截
                   e.stopPropagation();
                 }}
+                onClick={(e) => {
+                  // 防止点击触发父节点选择等逻辑，确保输入法焦点稳定
+                  e.stopPropagation();
+                }}
+                onMouseDown={(e) => {
+                  // 防止React Flow拖拽等行为影响输入焦点
+                  e.stopPropagation();
+                }}
                 onCompositionStart={() => {
                   // 中文输入开始，暂停其他处理
                   setIsComposing(true);
                 }}
                 onCompositionEnd={(e) => {
-                  // 中文输入结束，调整高度
+                  // 中文输入结束，更新状态
                   setIsComposing(false);
+
+                  // 确保中文输入的最终结果被保存
                   const target = e.target as HTMLTextAreaElement;
+                  useCanvasStore.setState((state) => {
+                    const nodeIndex = state.nodes.findIndex(n => n.id === data.id);
+                    if (nodeIndex !== -1 && state.nodes[nodeIndex].data) {
+                      (state.nodes[nodeIndex].data as KeywordNodeData).userInput = target.value;
+                    }
+                  });
+
+                  // 调整高度
                   target.style.height = 'auto';
                   target.style.height = Math.min(target.scrollHeight, 120) + 'px';
-                }}
-                onInput={(e) => {
-                  // 只在非中文输入时调整高度
-                  if (!isComposing) {
-                    const target = e.target as HTMLTextAreaElement;
-                    target.style.height = 'auto';
-                    target.style.height = Math.min(target.scrollHeight, 120) + 'px';
-                  }
                 }}
                 placeholder="Enter your answer..."
                 className="user-input"
@@ -329,6 +347,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               onKeyDown={handleKeyDown}
+              onCompositionStart={() => setIsComposing(true)}
+              onCompositionEnd={() => setIsComposing(false)}
               onBlur={handleSaveEdit}
               className="edit-input"
               autoFocus

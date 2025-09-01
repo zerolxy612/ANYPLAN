@@ -14,6 +14,8 @@ const ChatPanel = () => {
   const [isImportingSnapshot, setIsImportingSnapshot] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -126,6 +128,8 @@ const ChatPanel = () => {
 
   // 处理键盘事件
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // 中文输入法候选确认阶段不拦截Enter
+    if (isComposing) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -296,6 +300,8 @@ const ChatPanel = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
+              onCompositionStart={() => setIsComposing(true)}
+              onCompositionEnd={() => setIsComposing(false)}
               disabled={isAIGenerating}
             />
             <div className="input-footer">

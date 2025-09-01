@@ -39,6 +39,7 @@ const LevelBar: React.FC<LevelBarProps> = ({
   } | null>(null);
   const [editingLevel, setEditingLevel] = useState<number | null>(null);
   const [editingText, setEditingText] = useState('');
+  const [isComposing, setIsComposing] = useState(false);
 
 
 
@@ -188,82 +189,66 @@ const LevelBar: React.FC<LevelBarProps> = ({
           // 确保按钮在容器内显示，如果部分超出则调整位置
           const adjustedButtonLeft = Math.max(0, Math.min(buttonLeft, containerWidth - buttonWidth));
 
-          // 添加层级按钮
+          // 添加层级按钮（编辑态使用div，避免在button内嵌input导致IME异常）
           const levelButton = (
-            <button
-              key={level.level}
-              onClick={() => onLevelClick?.(level.label)}
-              onContextMenu={(e) => handleContextMenu(e, level.level)}
-              onDoubleClick={() => handleDoubleClick(level)}
-              title={`${level.label}: ${level.description}${level.nodeCount ? ` (${level.nodeCount}个节点)` : ''}`}
-              style={{
-                position: 'absolute',
-                left: `${adjustedButtonLeft}px`,
-                width: `${buttonWidth}px`,
-                height: '28px',
-                padding: '0',
-                backgroundColor: level.level === currentLevel ? '#65f0a3' : '#18161a',
-                border: level.level === currentLevel ? 'none' : '1px solid #404040',
-                borderRadius: '14px',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                overflow: 'hidden',
-                zIndex: 5
-              }}
-              onMouseEnter={(e) => {
-                if (level.level !== currentLevel) {
-                  e.currentTarget.style.backgroundColor = '#2a2830';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (level.level !== currentLevel) {
-                  e.currentTarget.style.backgroundColor = '#18161a';
-                }
-              }}
-            >
-              {/* L1 标签部分 */}
-              <div style={{
-                padding: '4px 6px',
-                backgroundColor: level.level === currentLevel ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
-                color: level.level === currentLevel ? '#000000' : '#ffffff',
-                fontWeight: '600',
-                borderRight: `1px solid ${level.level === currentLevel ? 'rgba(0,0,0,0.2)' : '#404040'}`,
-                display: 'flex',
-                alignItems: 'center',
-                fontSize: '10px',
-                minWidth: '24px',
-                justifyContent: 'center'
-              }}>
-                {level.label}
-              </div>
-
-              {/* 描述部分 */}
-              <div style={{
-                padding: '4px 6px',
-                color: level.level === currentLevel ? '#000000' : '#ffffff',
-                flex: 1,
-                textAlign: 'left',
-                // 原来的省略号逻辑（因为现在是固定文本，不需要省略号了）
-                // overflow: 'hidden',
-                // textOverflow: 'ellipsis',
-                // whiteSpace: 'nowrap',
-                // 新的完整显示逻辑
-                whiteSpace: 'pre-wrap', // 支持换行显示完整内容
-                wordBreak: 'break-word', // 长单词自动换行
-                fontSize: '10px',
-                minWidth: 0 // 确保flex子元素可以收缩
-              }}>
-                {editingLevel === level.level ? (
+            editingLevel === level.level ? (
+              <div
+                key={level.level}
+                title={`${level.label}: ${level.description}${level.nodeCount ? ` (${level.nodeCount}个节点)` : ''}`}
+                style={{
+                  position: 'absolute',
+                  left: `${adjustedButtonLeft}px`,
+                  width: `${buttonWidth}px`,
+                  height: '28px',
+                  padding: '0',
+                  backgroundColor: level.level === currentLevel ? '#65f0a3' : '#18161a',
+                  border: level.level === currentLevel ? 'none' : '1px solid #404040',
+                  borderRadius: '14px',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  overflow: 'hidden',
+                  zIndex: 5
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* L1 标签部分 */}
+                <div style={{
+                  padding: '4px 6px',
+                  backgroundColor: level.level === currentLevel ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                  color: level.level === currentLevel ? '#000000' : '#ffffff',
+                  fontWeight: '600',
+                  borderRight: `1px solid ${level.level === currentLevel ? 'rgba(0,0,0,0.2)' : '#404040'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '10px',
+                  minWidth: '24px',
+                  justifyContent: 'center'
+                }}>
+                  {level.label}
+                </div>
+                {/* 描述输入部分（编辑态） */}
+                <div style={{
+                  padding: '4px 6px',
+                  color: level.level === currentLevel ? '#000000' : '#ffffff',
+                  flex: 1,
+                  textAlign: 'left',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  fontSize: '10px',
+                  minWidth: 0
+                }}>
                   <input
                     type="text"
                     value={editingText}
                     onChange={(e) => setEditingText(e.target.value)}
-                    onBlur={handleEditSubmit}
+                    onCompositionStart={() => setIsComposing(true)}
+                    onCompositionEnd={() => setIsComposing(false)}
+                    onBlur={() => { if (!isComposing) handleEditSubmit(); }}
                     onKeyDown={(e) => {
+                      if (isComposing) return;
                       if (e.key === 'Enter') {
                         handleEditSubmit();
                       } else if (e.key === 'Escape') {
@@ -283,26 +268,108 @@ const LevelBar: React.FC<LevelBarProps> = ({
                     }}
                     onClick={(e) => e.stopPropagation()}
                   />
-                ) : (
-                  level.description
+                </div>
+                {level.nodeCount && level.nodeCount > 0 && (
+                  <div style={{
+                    padding: '1px 3px',
+                    backgroundColor: level.level === currentLevel ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)',
+                    color: level.level === currentLevel ? '#000000' : '#ffffff',
+                    fontSize: '8px',
+                    borderRadius: '4px',
+                    marginRight: '3px',
+                    flexShrink: 0
+                  }}>
+                    {level.nodeCount}
+                  </div>
                 )}
               </div>
-
-              {/* 节点数量显示 */}
-              {level.nodeCount && level.nodeCount > 0 && (
+            ) : (
+              <button
+                key={level.level}
+                onClick={() => onLevelClick?.(level.label)}
+                onContextMenu={(e) => handleContextMenu(e, level.level)}
+                onDoubleClick={() => handleDoubleClick(level)}
+                title={`${level.label}: ${level.description}${level.nodeCount ? ` (${level.nodeCount}个节点)` : ''}`}
+                style={{
+                  position: 'absolute',
+                  left: `${adjustedButtonLeft}px`,
+                  width: `${buttonWidth}px`,
+                  height: '28px',
+                  padding: '0',
+                  backgroundColor: level.level === currentLevel ? '#65f0a3' : '#18161a',
+                  border: level.level === currentLevel ? 'none' : '1px solid #404040',
+                  borderRadius: '14px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  overflow: 'hidden',
+                  zIndex: 5
+                }}
+                onMouseEnter={(e) => {
+                  if (level.level !== currentLevel) {
+                    e.currentTarget.style.backgroundColor = '#2a2830';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (level.level !== currentLevel) {
+                    e.currentTarget.style.backgroundColor = '#18161a';
+                  }
+                }}
+              >
+                {/* L1 标签部分 */}
                 <div style={{
-                  padding: '1px 3px',
-                  backgroundColor: level.level === currentLevel ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)',
+                  padding: '4px 6px',
+                  backgroundColor: level.level === currentLevel ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
                   color: level.level === currentLevel ? '#000000' : '#ffffff',
-                  fontSize: '8px',
-                  borderRadius: '4px',
-                  marginRight: '3px',
-                  flexShrink: 0
+                  fontWeight: '600',
+                  borderRight: `1px solid ${level.level === currentLevel ? 'rgba(0,0,0,0.2)' : '#404040'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '10px',
+                  minWidth: '24px',
+                  justifyContent: 'center'
                 }}>
-                  {level.nodeCount}
+                  {level.label}
                 </div>
-              )}
-            </button>
+
+                {/* 描述部分 */}
+                <div style={{
+                  padding: '4px 6px',
+                  color: level.level === currentLevel ? '#000000' : '#ffffff',
+                  flex: 1,
+                  textAlign: 'left',
+                  // 原来的省略号逻辑（因为现在是固定文本，不需要省略号了）
+                  // overflow: 'hidden',
+                  // textOverflow: 'ellipsis',
+                  // whiteSpace: 'nowrap',
+                  // 新的完整显示逻辑
+                  whiteSpace: 'pre-wrap', // 支持换行显示完整内容
+                  wordBreak: 'break-word', // 长单词自动换行
+                  fontSize: '10px',
+                  minWidth: 0 // 确保flex子元素可以收缩
+                }}>
+                  {level.description}
+                </div>
+
+                {/* 节点数量显示 */}
+                {level.nodeCount && level.nodeCount > 0 && (
+                  <div style={{
+                    padding: '1px 3px',
+                    backgroundColor: level.level === currentLevel ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)',
+                    color: level.level === currentLevel ? '#000000' : '#ffffff',
+                    fontSize: '8px',
+                    borderRadius: '4px',
+                    marginRight: '3px',
+                    flexShrink: 0
+                  }}>
+                    {level.nodeCount}
+                  </div>
+                )}
+              </button>
+            )
           );
 
           // 添加层级间的"+"按钮（在当前层级后面，但不包括最后一个层级）

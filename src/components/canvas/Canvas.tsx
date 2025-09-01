@@ -160,6 +160,12 @@ function CanvasComponent({ className }: CanvasProps) {
   // 键盘快捷键处理
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
+      // 检查事件是否来自输入框或文本区域，如果是则不处理
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        return;
+      }
+
       if (event.ctrlKey || event.metaKey) {
         switch (event.key) {
           case 's':
