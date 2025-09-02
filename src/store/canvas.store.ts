@@ -400,6 +400,9 @@ interface CanvasStore {
   // 检查L3节点是否都已填写完成
   checkL3NodesComplete: () => boolean;
 
+  // 检查指定层级节点是否都已填写完成
+  checkLevelNodesComplete: (level: number) => boolean;
+
   // 生成最终完整投诉信
   generateFinalComplaintLetter: () => Promise<void>;
 
@@ -1977,6 +1980,25 @@ export const useCanvasStore = create<CanvasStore>()(
       // 检查是否有3个L3节点，且都有用户输入
       return l3Nodes.length === 3 &&
              l3Nodes.every(node => {
+               const keywordData = node.data as KeywordNodeData;
+               return keywordData.userInput &&
+                      typeof keywordData.userInput === 'string' &&
+                      keywordData.userInput.trim().length > 0;
+             });
+    },
+
+    // 检查指定层级节点是否都已填写完成
+    checkLevelNodesComplete: (level: number) => {
+      const state = get();
+      const levelNodes = state.nodes.filter(node =>
+        node.data.type === 'keyword' &&
+        node.data.level === level &&
+        node.data.questionText
+      );
+
+      // 检查是否有3个节点，且都有用户输入
+      return levelNodes.length === 3 &&
+             levelNodes.every(node => {
                const keywordData = node.data as KeywordNodeData;
                return keywordData.userInput &&
                       typeof keywordData.userInput === 'string' &&

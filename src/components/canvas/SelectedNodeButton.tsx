@@ -13,14 +13,15 @@ const SelectedNodeButton: React.FC<SelectedNodeButtonProps> = ({ viewport }) => 
     nodes,
     generateChildren,
     loading,
-    selectedNodesByLevel
+    selectedNodesByLevel,
+    checkLevelNodesComplete
   } = useCanvasStore();
   
   const zoom = viewport?.zoom || 1;
   const offsetX = viewport?.x || 0;
   const offsetY = viewport?.y || 0;
 
-  // 获取所有选中且可展开的节点
+  // 获取所有选中且可展开的节点，包括自动显示的节点
   const getSelectedNodes = () => {
     if (process.env.NODE_ENV === 'development') {
       console.log('🔍 SelectedNodeButton - selectedNodesByLevel:', selectedNodesByLevel);
@@ -29,7 +30,7 @@ const SelectedNodeButton: React.FC<SelectedNodeButtonProps> = ({ viewport }) => 
 
     const selectedNodes: CanvasNode[] = [];
 
-    // 遍历所有选中的节点
+    // 1. 首先添加用户手动选中的节点
     for (const [level, nodeId] of Object.entries(selectedNodesByLevel)) {
       if (nodeId) {
         const node = nodes.find(n => n.id === nodeId);
@@ -48,8 +49,47 @@ const SelectedNodeButton: React.FC<SelectedNodeButtonProps> = ({ viewport }) => 
       }
     }
 
+    // 2. 如果没有手动选中的节点，检查是否需要自动显示按钮
+    if (selectedNodes.length === 0) {
+      // 检查L1层级是否完成且没有L2节点
+      if (checkLevelNodesComplete(1)) {
+        const hasL2Nodes = nodes.some(node => node.data.level === 2);
+        if (!hasL2Nodes) {
+          // L1完成但没有L2节点，在L1的中间节点显示按钮
+          const l1Nodes = nodes.filter(node => node.data.level === 1).sort((a, b) => a.position.y - b.position.y);
+          if (l1Nodes.length >= 2) {
+            const middleNode = l1Nodes[1]; // 选择中间节点（索引1）
+            if (middleNode.data.canExpand) {
+              selectedNodes.push(middleNode);
+              if (process.env.NODE_ENV === 'development') {
+                console.log('🎯 Auto-showing button for L1 middle node:', middleNode.id);
+              }
+            }
+          }
+        }
+      }
+
+      // 检查L2层级是否完成且没有L3节点
+      if (checkLevelNodesComplete(2)) {
+        const hasL3Nodes = nodes.some(node => node.data.level === 3);
+        if (!hasL3Nodes) {
+          // L2完成但没有L3节点，在L2的中间节点显示按钮
+          const l2Nodes = nodes.filter(node => node.data.level === 2).sort((a, b) => a.position.y - b.position.y);
+          if (l2Nodes.length >= 2) {
+            const middleNode = l2Nodes[1]; // 选择中间节点（索引1）
+            if (middleNode.data.canExpand) {
+              selectedNodes.push(middleNode);
+              if (process.env.NODE_ENV === 'development') {
+                console.log('🎯 Auto-showing button for L2 middle node:', middleNode.id);
+              }
+            }
+          }
+        }
+      }
+    }
+
     if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Selected expandable nodes:', selectedNodes.length);
+      console.log('✅ Selected expandable nodes (including auto):', selectedNodes.length);
     }
     return selectedNodes;
   };
