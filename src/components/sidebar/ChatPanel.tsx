@@ -36,8 +36,10 @@ const ChatPanel = () => {
   const [customEmotions, setCustomEmotions] = useState<EmotionOption[]>([]);
   const [isAddingCustomEmotion, setIsAddingCustomEmotion] = useState(false);
   const [customEmotionInput, setCustomEmotionInput] = useState('');
+  const [isToneDropdownOpen, setIsToneDropdownOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const toneDropdownRef = useRef<HTMLDivElement>(null);
 
   const {
     analyzeUserInput,
@@ -89,6 +91,21 @@ const ChatPanel = () => {
   useEffect(() => {
     setEmotionTags(selectedEmotions);
   }, [selectedEmotions, setEmotionTags]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isToneDropdownOpen &&
+        toneDropdownRef.current &&
+        !toneDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsToneDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isToneDropdownOpen]);
 
   // If greeting is empty, set default value
   const displayGreeting = greeting || 'Good afternoon';
@@ -272,10 +289,15 @@ const ChatPanel = () => {
   const handleFinalAnalyzeClick = async () => {
     if (isChatbotGenerating) return;
     try {
-      await generateFinalComplaintLetter();
       setMode('writing');
+      useCanvasStore.setState({ mode: 'writing' });
+      await generateFinalComplaintLetter();
     } catch (error) {
       console.error('Final analyze failed:', error);
+      setMode('inquiry');
+      useCanvasStore.setState({ mode: 'inquiry' });
+    } finally {
+      setIsToneDropdownOpen(false);
     }
   };
 
@@ -373,22 +395,36 @@ const ChatPanel = () => {
                     <span className="tone-badge">Recommended</span>
                   )}
                 </div>
-                <label className="tone-label" htmlFor="tone-select">
+                <label className="tone-label">
                   Tone options
                 </label>
-                <div className="tone-select-wrapper">
-                  <select
-                    id="tone-select"
-                    className="tone-select"
-                    value={letterTone}
-                    onChange={(e) => setLetterTone(e.target.value as LetterToneKey)}
+                <div className="tone-select-wrapper" ref={toneDropdownRef}>
+                  <button
+                    type="button"
+                    className={`tone-select-display ${isToneDropdownOpen ? 'open' : ''}`}
+                    onClick={() => setIsToneDropdownOpen((prev) => !prev)}
                   >
-                    {LETTER_TONE_OPTIONS.map((option) => (
-                      <option key={option.key} value={option.key}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    <span>{selectedToneOption?.label || 'Select tone'}</span>
+                    <span className="tone-select-caret">⌄</span>
+                  </button>
+                  {isToneDropdownOpen && (
+                    <div className="tone-dropdown">
+                      {LETTER_TONE_OPTIONS.map((option) => (
+                        <button
+                          type="button"
+                          key={option.key}
+                          className={`tone-option ${letterTone === option.key ? 'active' : ''}`}
+                          onClick={() => {
+                            setLetterTone(option.key as LetterToneKey);
+                            setIsToneDropdownOpen(false);
+                          }}
+                        >
+                          <span className="tone-option-label">{option.label}</span>
+                          <span className="tone-option-desc">{option.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <span className="tone-description-text">
                     {selectedToneOption?.description || 'Use your own custom tone instructions'}
                   </span>
@@ -1088,10 +1124,10 @@ const ChatPanel = () => {
           display: flex;
           flex-direction: column;
           gap: 8px;
+          position: relative;
         }
 
-        .tone-select {
-          appearance: none;
+        .tone-select-display {
           width: 100%;
           padding: 12px 16px;
           border-radius: 12px;
@@ -1100,19 +1136,71 @@ const ChatPanel = () => {
           color: #ffffff;
           font-size: 14px;
           font-weight: 600;
-          outline: none;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
           cursor: pointer;
           transition: border-color 0.2s ease, background 0.2s ease;
         }
 
-        .tone-select:hover {
+        .tone-select-display.open {
           border-color: #ffffff;
-          background: rgba(0, 0, 0, 0.35);
+          background: rgba(0, 0, 0, 0.4);
         }
 
-        .tone-select:focus {
-          border-color: #ffffff;
-          box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+        .tone-select-caret {
+          font-size: 16px;
+          opacity: 0.8;
+        }
+
+        .tone-dropdown {
+          position: absolute;
+          top: calc(100% + 8px);
+          left: 0;
+          width: 100%;
+          background: #0ab174;
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          border-radius: 16px;
+          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          z-index: 20;
+        }
+
+        .tone-option {
+          width: 100%;
+          border: none;
+          border-radius: 12px;
+          padding: 10px 12px;
+          text-align: left;
+          background: transparent;
+          color: #f1f5f9;
+          cursor: pointer;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .tone-option:hover {
+          background: rgba(3, 106, 76, 0.25);
+          transform: translateX(2px);
+        }
+
+        .tone-option.active {
+          background: #036a4c;
+        }
+
+        .tone-option-label {
+          display: block;
+          font-weight: 600;
+          font-size: 14px;
+        }
+
+        .tone-option-desc {
+          display: block;
+          font-size: 12px;
+          color: rgba(241, 245, 249, 0.8);
+          margin-top: 2px;
         }
 
         .tone-description-text {
