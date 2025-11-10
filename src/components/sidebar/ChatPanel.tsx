@@ -32,7 +32,7 @@ const ChatPanel = () => {
   const [importError, setImportError] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
-  const [selectedEmotions, setSelectedEmotions] = useState<string[]>(['Anxiety']);
+  const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
   const [customEmotions, setCustomEmotions] = useState<EmotionOption[]>([]);
   const [isAddingCustomEmotion, setIsAddingCustomEmotion] = useState(false);
   const [customEmotionInput, setCustomEmotionInput] = useState('');
@@ -537,6 +537,18 @@ const ChatPanel = () => {
                   selectedEmotions.map((emotion) => (
                     <span key={emotion} className="selected-emotion-chip">
                       #{emotion}
+                      <button
+                        type="button"
+                        className="emotion-remove"
+                        onClick={() =>
+                          setSelectedEmotions((prev) =>
+                            prev.filter((item) => item !== emotion)
+                          )
+                        }
+                        aria-label={`Remove ${emotion}`}
+                      >
+                        ×
+                      </button>
                     </span>
                   ))
                 ) : (
@@ -1318,14 +1330,31 @@ const ChatPanel = () => {
           background: rgba(101, 240, 163, 0.15);
           color: #65f0a3;
           border-radius: 999px;
-          padding: 4px 12px;
+          padding: 4px 8px 4px 12px;
           font-size: 13px;
           font-weight: 500;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
         }
 
         .selected-placeholder {
           color: #6b7280;
           font-size: 13px;
+        }
+
+        .emotion-remove {
+          border: none;
+          background: transparent;
+          color: rgba(255, 255, 255, 0.7);
+          cursor: pointer;
+          font-size: 12px;
+          padding: 0;
+          line-height: 1;
+        }
+
+        .emotion-remove:hover {
+          color: #ffffff;
         }
 
         .emotion-options {
