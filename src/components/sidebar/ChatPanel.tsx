@@ -24,6 +24,68 @@ const DEFAULT_EMOTION_OPTIONS: EmotionOption[] = [
   { id: 'surprised', label: 'Surprised', emoji: '😳' },
 ];
 
+const EMOTION_COLOR_MAP: Record<string, {
+  baseBg: string;
+  baseBorder: string;
+  baseText: string;
+  activeBg: string;
+  activeText: string;
+}> = {
+  angry: {
+    baseBg: 'rgba(240,75,76,0.15)',
+    baseBorder: 'rgba(240,75,76,0.4)',
+    baseText: '#f04b4c',
+    activeBg: '#f04b4c',
+    activeText: '#130101'
+  },
+  frustrated: {
+    baseBg: 'rgba(255,140,66,0.15)',
+    baseBorder: 'rgba(255,140,66,0.4)',
+    baseText: '#ff8c42',
+    activeBg: '#ff8c42',
+    activeText: '#160701'
+  },
+  disappointed: {
+    baseBg: 'rgba(155,81,224,0.15)',
+    baseBorder: 'rgba(155,81,224,0.4)',
+    baseText: '#9b51e0',
+    activeBg: '#9b51e0',
+    activeText: '#18021f'
+  },
+  anxiety: {
+    baseBg: 'rgba(242,201,76,0.15)',
+    baseBorder: 'rgba(242,201,76,0.4)',
+    baseText: '#f2c94c',
+    activeBg: '#f2c94c',
+    activeText: '#1b1102'
+  },
+  worried: {
+    baseBg: 'rgba(45,156,219,0.15)',
+    baseBorder: 'rgba(45,156,219,0.4)',
+    baseText: '#2d9cdb',
+    activeBg: '#2d9cdb',
+    activeText: '#02121e'
+  },
+  surprised: {
+    baseBg: 'rgba(86,204,242,0.15)',
+    baseBorder: 'rgba(86,204,242,0.4)',
+    baseText: '#56ccf2',
+    activeBg: '#56ccf2',
+    activeText: '#01131b'
+  },
+};
+
+const getEmotionColors = (label: string) => {
+  const key = label.toLowerCase();
+  return EMOTION_COLOR_MAP[key] || {
+    baseBg: 'rgba(101, 240, 163, 0.15)',
+    baseBorder: 'rgba(101, 240, 163, 0.3)',
+    baseText: '#65f0a3',
+    activeBg: '#65f0a3',
+    activeText: '#111'
+  };
+};
+
 const ChatPanel = () => {
   const [greeting, setGreeting] = useState('');
   const [inputValue, setInputValue] = useState('');
@@ -534,41 +596,59 @@ const ChatPanel = () => {
             <div className="emotion-card">
               <div className="selected-emotions">
                 {selectedEmotions.length > 0 ? (
-                  selectedEmotions.map((emotion) => (
-                    <span key={emotion} className="selected-emotion-chip">
-                      #{emotion}
-                      <button
-                        type="button"
-                        className="emotion-remove"
-                        onClick={() =>
-                          setSelectedEmotions((prev) =>
-                            prev.filter((item) => item !== emotion)
-                          )
-                        }
-                        aria-label={`Remove ${emotion}`}
+                  selectedEmotions.map((emotion) => {
+                    const colors = getEmotionColors(emotion);
+                    return (
+                      <span
+                        key={emotion}
+                        className="selected-emotion-chip"
+                        style={{
+                          background: colors.baseBg,
+                          borderColor: colors.baseBorder,
+                          color: colors.baseText
+                        }}
                       >
-                        ×
-                      </button>
-                    </span>
-                  ))
+                        #{emotion}
+                        <button
+                          type="button"
+                          className="emotion-remove"
+                          onClick={() =>
+                            setSelectedEmotions((prev) =>
+                              prev.filter((item) => item !== emotion)
+                            )
+                          }
+                          aria-label={`Remove ${emotion}`}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    );
+                  })
                 ) : (
                   <span className="selected-placeholder">No emotion selected yet</span>
                 )}
               </div>
               <div className="emotion-options">
-                {emotionOptions.map((emotion) => (
-                  <button
-                    type="button"
-                    key={emotion.id}
-                    className={`emotion-chip ${
-                      selectedEmotions.includes(emotion.label) ? 'selected' : ''
-                    }`}
-                    onClick={() => toggleEmotion(emotion.label)}
-                  >
-                    {emotion.emoji && <span className="emotion-emoji">{emotion.emoji}</span>}
-                    {emotion.label}
-                  </button>
-                ))}
+                {emotionOptions.map((emotion) => {
+                  const isSelected = selectedEmotions.includes(emotion.label);
+                  const colors = getEmotionColors(emotion.label);
+                  return (
+                    <button
+                      type="button"
+                      key={emotion.id}
+                      className={`emotion-chip ${isSelected ? 'selected' : ''}`}
+                      onClick={() => toggleEmotion(emotion.label)}
+                      style={{
+                        background: isSelected ? colors.activeBg : colors.baseBg,
+                        color: isSelected ? colors.activeText : colors.baseText,
+                        borderColor: colors.baseBorder
+                      }}
+                    >
+                      {emotion.emoji && <span className="emotion-emoji">{emotion.emoji}</span>}
+                      {emotion.label}
+                    </button>
+                  );
+                })}
                 <button
                   type="button"
                   className={`emotion-chip add-chip ${isAddingCustomEmotion ? 'selected' : ''}`}
@@ -1370,23 +1450,14 @@ const ChatPanel = () => {
           padding: 6px 14px;
           border-radius: 999px;
           border: 1px solid #333338;
-          background: transparent;
-          color: #e4e4e7;
           font-size: 13px;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .emotion-chip:hover {
-          border-color: #65f0a3;
-          color: #65f0a3;
-        }
-
-        .emotion-chip.selected {
-          background: #ffffff;
-          color: #111;
-          border-color: #ffffff;
-          font-weight: 600;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
 
         .emotion-chip.add-chip {
