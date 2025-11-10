@@ -208,7 +208,12 @@ export const GENERATE_COMPLAINT_LETTER_PROMPT = (
     level: number;
     levelDescription: string;
   }>,
-  userInput?: string
+  userInput?: string,
+  tonePreference?: {
+    label: string;
+    description: string;
+    prompt: string;
+  }
 ) => {
   const chainText = chainContent
     .map(item => `【${item.levelDescription}】${item.content}`)
@@ -225,6 +230,7 @@ As a professional complaint letter writing assistant, please generate a complete
 ${chainText}
 
 ${userInput ? `【Additional Notes】\n${userInput}\n` : ''}
+${tonePreference ? `【Tone Preference】\n${tonePreference.label}: ${tonePreference.prompt}\n` : ''}
 
 【Complaint Letter Requirements】
 Please generate a professional complaint letter with the following structure:
@@ -256,7 +262,7 @@ Please generate a professional complaint letter with the following structure:
 
 【Writing Guidelines】
 - Use formal business letter format
-- Maintain professional, respectful but firm tone
+- Maintain the requested tone${tonePreference ? ` (specifically "${tonePreference.label}" : ${tonePreference.description})` : ''} while staying professional
 - Include specific details and facts
 - Make clear, actionable requests
 - Structure with proper paragraphs and formatting

@@ -19,6 +19,7 @@ import { NodeExpansionResult } from '@/lib/ai/types';
 import { geminiService } from '@/lib/ai/gemini';
 import { CHATBOT_RESPONSE_TEMPLATE } from '@/lib/ai/prompts';
 import { downloadFile, createSnapshotFilename } from '@/lib/utils/file';
+import { LetterToneKey, findToneOption } from '@/constants/letterTones';
 // AI helper functions - using real Gemini API
 const analyzeUserInput = async (userInput: string, existingLevels?: Array<{level: number, description: string}>) => {
   try {
@@ -338,6 +339,21 @@ interface CanvasStore {
     timestamp: number;
     dateStr: string;
   } | null;
+
+  // Letter tone control
+  letterTone: LetterToneKey;
+  customTonePrompt: string;
+  setLetterTone: (tone: LetterToneKey) => void;
+  setCustomTonePrompt: (prompt: string) => void;
+  getTonePreference: () => {
+    label: string;
+    description: string;
+    prompt: string;
+  } | undefined;
+
+  // Emotion tags (from onboarding mood selection)
+  emotionTags: string[];
+  setEmotionTags: (tags: string[]) => void;
   
   // 基础操作
   setNodes: (nodes: CanvasNode[]) => void;
@@ -507,6 +523,9 @@ export const useCanvasStore = create<CanvasStore>()(
     error: null,
     config: defaultConfig,
     lastGeneratedReport: null,
+    letterTone: 'polite',
+    customTonePrompt: '',
+    emotionTags: [],
 
     // Basic operations
     setNodes: (nodes) => set((state) => {
@@ -1687,6 +1706,8 @@ export const useCanvasStore = create<CanvasStore>()(
 
       state.loading = defaultLoadingState;
       state.error = null;
+      state.letterTone = 'polite';
+      state.customTonePrompt = '';
     }),
 
     // 报告生成
@@ -1717,7 +1738,8 @@ export const useCanvasStore = create<CanvasStore>()(
       try {
         const result = await geminiService.generateReport({
           chainContent,
-          userInput
+          userInput,
+          tonePreference: state.getTonePreference()
         });
 
         if (process.env.NODE_ENV === 'development') {
@@ -1781,7 +1803,8 @@ export const useCanvasStore = create<CanvasStore>()(
         // 生成报告内容
         const reportResult = await geminiService.generateReport({
           chainContent,
-          userInput
+          userInput,
+          tonePreference: state.getTonePreference()
         });
 
         // 创建时间戳
@@ -2093,5 +2116,48 @@ export const useCanvasStore = create<CanvasStore>()(
         });
       }
     },
+
+    setLetterTone: (tone: LetterToneKey) => set((state) => {
+      state.letterTone = tone;
+      if (tone !== 'custom') {
+        state.customTonePrompt = '';
+      }
+    }),
+
+    setCustomTonePrompt: (prompt: string) => set((state) => {
+      state.letterTone = 'custom';
+      state.customTonePrompt = prompt;
+    }),
+
+    getTonePreference: () => {
+      const state = get();
+
+      if (state.letterTone === 'custom') {
+        const customPrompt = state.customTonePrompt.trim();
+        if (!customPrompt) {
+          return undefined;
+        }
+        return {
+          label: 'Custom Tone',
+          description: 'User provided tone guidance',
+          prompt: customPrompt
+        };
+      }
+
+      const toneOption = findToneOption(state.letterTone);
+      if (!toneOption) {
+        return undefined;
+      }
+
+      return {
+        label: toneOption.label,
+        description: toneOption.description,
+        prompt: toneOption.aiPrompt
+      };
+    },
+
+    setEmotionTags: (tags: string[]) => set((state) => {
+      state.emotionTags = tags;
+    }),
   }))
 );

@@ -105,6 +105,11 @@ export interface ReportGenerationRequest {
     levelDescription: string;
   }>;
   userInput?: string;
+  tonePreference?: {
+    label: string;
+    description: string;
+    prompt: string;
+  };
 }
 
 // 报告生成结果

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useState, useRef } from 'react';
+import React, { memo, useState, useRef, useMemo } from 'react';
 import { NodeProps } from '@xyflow/react';
 import { KeywordNodeData } from '@/types/canvas';
 import { useCanvasStore } from '@/store/canvas.store';
@@ -10,6 +10,42 @@ import { NODE_DIMENSIONS } from '@/lib/canvas/constants';
 interface KeywordNodeProps extends NodeProps {
   data: KeywordNodeData;
 }
+
+type EmotionColorTheme = {
+  cardBg: string;
+  cardBorder: string;
+  inputBg: string;
+  inputBorder: string;
+  inputFocusBorder: string;
+  inputShadow: string;
+};
+
+const L2_EMOTION_THEMES: Record<string, EmotionColorTheme> = {
+  'How did it affect you emotionally?': {
+    cardBg: '#2f1800',
+    cardBorder: '#4a2600',
+    inputBg: '#38220b',
+    inputBorder: '#5a2f0d',
+    inputFocusBorder: '#f3ad6d',
+    inputShadow: 'rgba(243, 173, 109, 0.35)',
+  },
+  'What inconvenience or harm did it cause?': {
+    cardBg: '#150116',
+    cardBorder: '#2a052d',
+    inputBg: '#301233',
+    inputBorder: '#4c1b54',
+    inputFocusBorder: '#e0a7ff',
+    inputShadow: 'rgba(224, 167, 255, 0.35)',
+  },
+  'How important was this to you?': {
+    cardBg: '#150116',
+    cardBorder: '#2a052d',
+    inputBg: '#301233',
+    inputBorder: '#4c1b54',
+    inputFocusBorder: '#e0a7ff',
+    inputShadow: 'rgba(224, 167, 255, 0.35)',
+  },
+};
 
 const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -52,6 +88,7 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   // 在探索模式下，只使用 getHighlightedNodes 的结果
   // 在写作模式下，使用完整的选择状态
   const nodeSelected = shouldHighlight; // 统一使用 shouldHighlight
+  const isHighlighted = shouldHighlight || nodeSelected;
 
   // 调试信息（开发环境）
   if (process.env.NODE_ENV === 'development' && (shouldHighlight || nodeSelected)) {
@@ -67,6 +104,20 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
   const nodeWidth = NODE_DIMENSIONS.KEYWORD.width;
   const contentWidth = nodeWidth - 40; // 减去padding
 
+  const questionKey = (data.questionText || data.content || '').trim();
+  const level2Theme = useMemo(() => {
+    if (data.level !== 2) return undefined;
+    return L2_EMOTION_THEMES[questionKey];
+  }, [data.level, questionKey]);
+
+  const nodeBackgroundColor = isHighlighted ? '#65f0a3' : level2Theme?.cardBg || levelColor;
+  const nodeBorderColor = isHighlighted ? '#65f0a3' : level2Theme?.cardBorder || '#404040';
+  const userInputBg = isHighlighted ? level2Theme?.inputBg || '#171717' : level2Theme?.inputBg;
+  const userInputBorder = isHighlighted ? '#65f0a3' : level2Theme?.inputBorder;
+  const userInputFocusBorder = isHighlighted ? '#65f0a3' : level2Theme?.inputFocusBorder;
+  const userInputShadow = isHighlighted
+    ? 'rgba(101, 240, 163, 0.3)'
+    : level2Theme?.inputShadow;
 
 
 
@@ -237,18 +288,19 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
     };
   }, [hideButtonTimer]);
   
-  // 统一使用我们的高亮逻辑，忽略React Flow的selected
-  const isHighlighted = shouldHighlight || nodeSelected;
-
   return (
     <div
       className={`keyword-node ${isHighlighted ? 'selected' : ''}`}
       style={{
-        borderColor: isHighlighted ? '#65f0a3' : '#404040',
+        borderColor: nodeBorderColor,
         borderWidth: isHighlighted ? '2px' : '1px',
-        backgroundColor: isHighlighted ? '#65f0a3' : levelColor,
+        backgroundColor: nodeBackgroundColor,
         boxShadow: isHighlighted ? `0 0 0 2px #65f0a320` : '0 1px 3px rgba(0, 0, 0, 0.3)',
-        '--node-bg-color': isHighlighted ? '#65f0a3' : levelColor,
+        '--node-bg-color': nodeBackgroundColor,
+        '--user-input-bg': userInputBg || '#171717',
+        '--user-input-border': userInputBorder || '#404040',
+        '--user-input-border-focus': userInputFocusBorder || '#65f0a3',
+        '--user-input-shadow': userInputShadow || 'rgba(101, 240, 163, 0.3)',
         // 展开时大幅提升z-index，确保在所有元素之上
         zIndex: isExpanded ? 9999 : 'auto',
       } as React.CSSProperties}
@@ -867,8 +919,8 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
 
         .user-input {
           width: 100%;
-          background: #171717;
-          border: 1px solid #404040;
+          background: var(--user-input-bg, #171717);
+          border: 1px solid var(--user-input-border, #404040);
           border-radius: 8px;
           padding: 8px 12px;
           color: #ffffff;
@@ -886,9 +938,9 @@ const KeywordNode = memo(({ data, selected }: KeywordNodeProps) => {
         }
 
         .user-input:focus {
-          background: #171717;
-          border-color: #65f0a3;
-          box-shadow: 0 0 0 2px rgba(101, 240, 163, 0.3);
+          background: var(--user-input-bg, #171717);
+          border-color: var(--user-input-border-focus, #65f0a3);
+          box-shadow: 0 0 0 2px var(--user-input-shadow, rgba(101, 240, 163, 0.3));
         }
 
         .user-input::placeholder {

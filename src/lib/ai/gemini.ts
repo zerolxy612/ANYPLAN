@@ -21,10 +21,15 @@ import {
   SYSTEM_PROMPT
 } from './prompts';
 
+const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+const GEMINI_API_URL =
+  process.env.NEXT_PUBLIC_GEMINI_API_URL ||
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
 // Gemini API配置
 const DEFAULT_CONFIG: AIServiceConfig = {
-  apiKey: 'AIzaSyBehM0G5s23Qv3Czh1sJpsclL2cpLBY3XQ',
-  apiUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+  apiKey: GEMINI_API_KEY,
+  apiUrl: GEMINI_API_URL,
   defaultTemperature: 0.7,
   maxTokens: 4096, // 增加token限制，支持更长的输出
   timeout: 45000, // 增加超时时间到45秒
@@ -39,6 +44,10 @@ class GeminiService {
 
   // 发送请求到Gemini API
   private async sendRequest(prompt: string): Promise<string> {
+    if (!this.config.apiKey) {
+      throw this.createError('API_ERROR', 'Missing Gemini API key. Please set NEXT_PUBLIC_GEMINI_API_KEY.');
+    }
+
     const request: GeminiRequest = {
       contents: [
         {
@@ -238,7 +247,11 @@ class GeminiService {
         throw this.createError('API_ERROR', 'Chain content cannot be empty');
       }
 
-      const prompt = GENERATE_COMPLAINT_LETTER_PROMPT(request.chainContent, request.userInput);
+      const prompt = GENERATE_COMPLAINT_LETTER_PROMPT(
+        request.chainContent,
+        request.userInput,
+        request.tonePreference
+      );
       const response = await this.sendRequest(prompt);
 
       // 尝试解析AI返回的内容

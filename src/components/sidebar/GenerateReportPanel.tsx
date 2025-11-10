@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useCanvasStore } from '@/store/canvas.store';
@@ -15,6 +15,9 @@ const GenerateReportPanel = () => {
   } = useCanvasStore();
   
   const [hasStartedGeneration, setHasStartedGeneration] = useState(false);
+  const [refinementInput, setRefinementInput] = useState('');
+  const [hasSubmittedRefinement, setHasSubmittedRefinement] = useState(false);
+  const [selectedMood, setSelectedMood] = useState<string | null>(null);
 
   // 当组件挂载时自动开始生成报告
   useEffect(() => {
@@ -24,7 +27,30 @@ const GenerateReportPanel = () => {
         console.error('Failed to generate report:', error);
       });
     }
+    if (lastGeneratedReport) {
+      setHasSubmittedRefinement(false);
+      setRefinementInput('');
+      setSelectedMood(null);
+    }
   }, [hasStartedGeneration, isAIGenerating, lastGeneratedReport, generateReport]);
+
+  const moodOptions = useMemo(() => ([
+    { id: 'angry', label: '😡' },
+    { id: 'unsatisfied', label: '😕' },
+    { id: 'neutral', label: '😐' },
+    { id: 'satisfied', label: '🙂' },
+    { id: 'delighted', label: '😄' },
+  ]), []);
+
+  const handleRefineLetter = async () => {
+    if (!refinementInput.trim() || isAIGenerating) return;
+    try {
+      setHasSubmittedRefinement(true);
+      await generateReport(refinementInput.trim());
+    } catch (error) {
+      console.error('Failed to refine report:', error);
+    }
+  };
 
   return (
     <div className="generate-report-panel">
@@ -76,6 +102,53 @@ const GenerateReportPanel = () => {
           {/* 下载按钮 */}
           <div className="download-section">
             <ReportDownloadButtons />
+          </div>
+
+          {/* 修改与满意度反馈 */}
+          <div className="feedback-section">
+            <div className="refine-card">
+              <h4>Need adjustments?</h4>
+              <p>Describe what should change and we will regenerate the letter with those instructions.</p>
+              <textarea
+                placeholder="e.g., “Make the tone more urgent and emphasize the refund request.”"
+                value={refinementInput}
+                onChange={(e) => {
+                  setRefinementInput(e.target.value);
+                  setHasSubmittedRefinement(false);
+                }}
+                rows={3}
+                disabled={isAIGenerating}
+              />
+              <button
+                className={`refine-button ${isAIGenerating || !refinementInput.trim() ? 'disabled' : ''}`}
+                onClick={handleRefineLetter}
+                disabled={isAIGenerating || !refinementInput.trim()}
+              >
+                {isAIGenerating && hasSubmittedRefinement ? 'Regenerating...' : 'Update Letter'}
+              </button>
+            </div>
+
+            <div className="mood-card">
+              <p className="mood-question">How do you feel about this result?</p>
+              <div className="mood-options">
+                {moodOptions.map(option => (
+                  <button
+                    key={option.id}
+                    className={`mood-button ${selectedMood === option.id ? 'selected' : ''}`}
+                    onClick={() => setSelectedMood(option.id)}
+                    type="button"
+                    disabled={isAIGenerating}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              {selectedMood && (
+                <p className="mood-selection">
+                  Thanks for letting us know — we&rsquo;ll use it to keep improving.
+                </p>
+              )}
+            </div>
           </div>
 
           {/* 返回按钮 */}
@@ -175,6 +248,120 @@ const GenerateReportPanel = () => {
 
         .download-section {
           margin-bottom: 20px;
+        }
+
+        .feedback-section {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          margin-bottom: 20px;
+        }
+
+        .refine-card,
+        .mood-card {
+          background: #111016;
+          border: 1px solid #2f2f33;
+          border-radius: 16px;
+          padding: 16px;
+        }
+
+        .refine-card h4 {
+          margin: 0 0 4px 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: #ffffff;
+        }
+
+        .refine-card p {
+          margin: 0 0 12px 0;
+          color: #a1a1aa;
+          font-size: 14px;
+        }
+
+        .refine-card textarea {
+          width: 100%;
+          border-radius: 12px;
+          border: 1px solid #2f2f33;
+          background: #0b0b10;
+          color: #ffffff;
+          padding: 12px;
+          font-size: 14px;
+          resize: none;
+          min-height: 80px;
+          margin-bottom: 12px;
+        }
+
+        .refine-card textarea:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .refine-button {
+          width: 100%;
+          border: none;
+          border-radius: 10px;
+          background: linear-gradient(135deg, #23c686, #0f9f5c);
+          color: #04150d;
+          font-weight: 600;
+          padding: 12px;
+          cursor: pointer;
+          transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .refine-button:hover:not(.disabled) {
+          transform: translateY(-1px);
+        }
+
+        .refine-button.disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+
+        .mood-card {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .mood-question {
+          margin: 0;
+          font-size: 15px;
+          font-weight: 600;
+          color: #ffffff;
+        }
+
+        .mood-options {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .mood-button {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          border: 1px solid #2f2f33;
+          background: #18161c;
+          color: #ffffff;
+          font-size: 24px;
+          cursor: pointer;
+          transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .mood-button.selected {
+          border-color: #65f0a3;
+          transform: translateY(-2px);
+        }
+
+        .mood-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .mood-selection {
+          margin: 0;
+          font-size: 13px;
+          color: #65f0a3;
         }
 
         .action-section {

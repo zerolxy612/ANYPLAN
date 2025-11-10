@@ -1,11 +1,28 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useCanvasStore } from '@/store/canvas.store';
 import { parseSnapshotFile, validateSnapshotFile } from '@/lib/utils/file';
 import GenerateReportPanel from './GenerateReportPanel';
+import { LETTER_TONE_OPTIONS, LetterToneKey } from '@/constants/letterTones';
+
+type EmotionOption = {
+  id: string;
+  label: string;
+  emoji?: string;
+  isCustom?: boolean;
+};
+
+const DEFAULT_EMOTION_OPTIONS: EmotionOption[] = [
+  { id: 'angry', label: 'Angry', emoji: '😡' },
+  { id: 'frustrated', label: 'Frustrated', emoji: '😤' },
+  { id: 'disappointed', label: 'Disappointed', emoji: '😔' },
+  { id: 'anxiety', label: 'Anxiety', emoji: '😐' },
+  { id: 'worried', label: 'Worried', emoji: '😥' },
+  { id: 'surprised', label: 'Surprised', emoji: '😳' },
+];
 
 const ChatPanel = () => {
   const [greeting, setGreeting] = useState('');
@@ -15,6 +32,10 @@ const ChatPanel = () => {
   const [importError, setImportError] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
+  const [selectedEmotions, setSelectedEmotions] = useState<string[]>(['Anxiety']);
+  const [customEmotions, setCustomEmotions] = useState<EmotionOption[]>([]);
+  const [isAddingCustomEmotion, setIsAddingCustomEmotion] = useState(false);
+  const [customEmotionInput, setCustomEmotionInput] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -32,8 +53,14 @@ const ChatPanel = () => {
     clearChatMessages,
     isChatbotGenerating,
     checkL3NodesComplete,
+    letterTone,
+    setLetterTone,
+    customTonePrompt,
+    setCustomTonePrompt,
     generateFinalComplaintLetter,
-    hasFinalAnalyzed
+    hasFinalAnalyzed,
+    setMode,
+    setEmotionTags
   } = useCanvasStore();
 
   // Dynamically set greeting based on time
@@ -58,6 +85,10 @@ const ChatPanel = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    setEmotionTags(selectedEmotions);
+  }, [selectedEmotions, setEmotionTags]);
 
   // If greeting is empty, set default value
   const displayGreeting = greeting || 'Good afternoon';
@@ -185,6 +216,69 @@ const ChatPanel = () => {
     }
   };
 
+  const emotionOptions = useMemo(
+    () => [...DEFAULT_EMOTION_OPTIONS, ...customEmotions],
+    [customEmotions]
+  );
+
+  const selectedToneOption = useMemo(
+    () => LETTER_TONE_OPTIONS.find((option) => option.key === letterTone),
+    [letterTone]
+  );
+
+  const toggleEmotion = (label: string) => {
+    setSelectedEmotions((prev) =>
+      prev.includes(label) ? prev.filter((item) => item !== label) : [...prev, label]
+    );
+  };
+
+  const handleCustomEmotionSubmit = () => {
+    const trimmed = customEmotionInput.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const normalizedLabel = trimmed.replace(/^#+/, '');
+    const alreadyExists =
+      emotionOptions.some((emotion) => emotion.label.toLowerCase() === normalizedLabel.toLowerCase());
+
+    if (!alreadyExists) {
+      const newEmotion: EmotionOption = {
+        id: `custom-${Date.now()}`,
+        label: normalizedLabel,
+        isCustom: true,
+      };
+      setCustomEmotions((prev) => [...prev, newEmotion]);
+    }
+
+    setSelectedEmotions((prev) =>
+      prev.includes(normalizedLabel) ? prev : [...prev, normalizedLabel]
+    );
+    setCustomEmotionInput('');
+    setIsAddingCustomEmotion(false);
+  };
+
+  const handleCustomEmotionKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleCustomEmotionSubmit();
+    }
+    if (e.key === 'Escape') {
+      setIsAddingCustomEmotion(false);
+      setCustomEmotionInput('');
+    }
+  };
+
+  const handleFinalAnalyzeClick = async () => {
+    if (isChatbotGenerating) return;
+    try {
+      await generateFinalComplaintLetter();
+      setMode('writing');
+    } catch (error) {
+      console.error('Final analyze failed:', error);
+    }
+  };
+
   return (
     <div className={`chat-panel ${chatMessages.length > 0 ? 'has-messages' : ''}`}>
       {mode === 'writing' ? (
@@ -269,21 +363,64 @@ const ChatPanel = () => {
 
             {/* L3完成后的分析按钮 */}
             {checkL3NodesComplete() && (
-              <div className="final-complaint-section">
+              <div className="tone-selection-card">
+                <div className="tone-header">
+                  <div>
+                    <p className="tone-eyebrow">Great work collecting the facts</p>
+                    <h3 className="tone-title">Select the tone for your letter</h3>
+                  </div>
+                  {selectedToneOption?.recommended && (
+                    <span className="tone-badge">Recommended</span>
+                  )}
+                </div>
+                <label className="tone-label" htmlFor="tone-select">
+                  Tone options
+                </label>
+                <div className="tone-select-wrapper">
+                  <select
+                    id="tone-select"
+                    className="tone-select"
+                    value={letterTone}
+                    onChange={(e) => setLetterTone(e.target.value as LetterToneKey)}
+                  >
+                    {LETTER_TONE_OPTIONS.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="tone-description-text">
+                    {selectedToneOption?.description || 'Use your own custom tone instructions'}
+                  </span>
+                </div>
+                {letterTone === 'custom' && (
+                  <div className="custom-tone-group">
+                    <textarea
+                      className="custom-tone-input"
+                      placeholder="Describe the tone you want (e.g., “Firm but appreciative, showing urgency without sounding aggressive.”)"
+                      value={customTonePrompt}
+                      onChange={(e) => setCustomTonePrompt(e.target.value)}
+                      rows={3}
+                    />
+                    <p className="custom-tone-hint">
+                      These instructions are sent directly to the AI to shape the letter’s voice.
+                    </p>
+                  </div>
+                )}
+                <p className="tone-hint">
+                  The selected tone will be applied when you switch to Writing mode and click “Generate”.
+                </p>
                 <button
-                  className={`final-complaint-button ${isChatbotGenerating ? 'disabled' : ''}`}
-                  onClick={generateFinalComplaintLetter}
+                  type="button"
+                  className={`tone-analyze-button ${isChatbotGenerating ? 'disabled' : ''}`}
+                  onClick={handleFinalAnalyzeClick}
                   disabled={isChatbotGenerating}
                 >
-                  {isChatbotGenerating ? '⏳ Analyzing...' : (hasFinalAnalyzed ? '🔍 Analyze Again' : '🔍 Final Analyze')}
+                  {isChatbotGenerating ? '⏳ Analyzing...' : hasFinalAnalyzed ? '🔍 Analyze Again' : '🔍 Final Analyze'}
                 </button>
-                <p className="final-complaint-hint">
-                  All information collected! Click to get final analysis and recommendations.
-                </p>
-                {/* 显示引导提示 - 只在已完成final analyze后显示 */}
                 {hasFinalAnalyzed && (
-                  <p className="generate-guide-hint">
-                    ✅ Analysis complete! You can now click the &quot;Generate&quot; button above to create your professional complaint letter.
+                  <p className="tone-hint">
+                    Final analysis ready! Head to Writing mode any time to generate the refined letter.
                   </p>
                 )}
               </div>
@@ -352,6 +489,72 @@ const ChatPanel = () => {
             </div>
           </div>
         </div>
+        {chatMessages.length === 0 && (
+          <div className="emotion-section">
+            <div className="emotion-header">
+              <p className="emotion-question">How did you feel?</p>
+              <p className="emotion-instruction">Select your emotion labels</p>
+            </div>
+            <div className="emotion-card">
+              <div className="selected-emotions">
+                {selectedEmotions.length > 0 ? (
+                  selectedEmotions.map((emotion) => (
+                    <span key={emotion} className="selected-emotion-chip">
+                      #{emotion}
+                    </span>
+                  ))
+                ) : (
+                  <span className="selected-placeholder">No emotion selected yet</span>
+                )}
+              </div>
+              <div className="emotion-options">
+                {emotionOptions.map((emotion) => (
+                  <button
+                    type="button"
+                    key={emotion.id}
+                    className={`emotion-chip ${
+                      selectedEmotions.includes(emotion.label) ? 'selected' : ''
+                    }`}
+                    onClick={() => toggleEmotion(emotion.label)}
+                  >
+                    {emotion.emoji && <span className="emotion-emoji">{emotion.emoji}</span>}
+                    {emotion.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={`emotion-chip add-chip ${isAddingCustomEmotion ? 'selected' : ''}`}
+                  onClick={() => {
+                    setIsAddingCustomEmotion((prev) => !prev);
+                    setCustomEmotionInput('');
+                  }}
+                >
+                  <span className="emotion-emoji">➕</span>
+                  Add your own...
+                </button>
+              </div>
+              {isAddingCustomEmotion && (
+                <div className="custom-emotion-row">
+                  <input
+                    className="custom-emotion-input"
+                    type="text"
+                    placeholder="Type an emotion and press Enter"
+                    value={customEmotionInput}
+                    onChange={(e) => setCustomEmotionInput(e.target.value)}
+                    onKeyDown={handleCustomEmotionKeyDown}
+                  />
+                  <button
+                    type="button"
+                    className="save-custom-emotion"
+                    onClick={handleCustomEmotionSubmit}
+                  >
+                    Save
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         </>
       )}
 
@@ -485,7 +688,8 @@ const ChatPanel = () => {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          align-items: center;
+          align-items: flex-start;
+          width: 100%;
           gap: 32px;
           flex-shrink: 0; /* 防止被挤压 */
         }
@@ -493,8 +697,14 @@ const ChatPanel = () => {
         .greeting-section.compact {
           gap: 16px;
           justify-content: flex-end;
-          flex-shrink: 0; /* 防止被挤压 */
+          align-items: flex-start;
+          flex-shrink: 0;
           flex: 0; /* 在有消息时不占据额外空间，让messages-section充分利用空间 */
+        }
+
+        .text-block {
+          width: 100%;
+          text-align: left;
         }
 
         .greeting-section:not(.compact) {
@@ -823,64 +1033,286 @@ const ChatPanel = () => {
           }
         }
 
-        /* L3完成后的生成按钮样式 */
-        .final-complaint-section {
+        .tone-selection-card {
           margin-bottom: 20px;
-          padding: 16px;
-          background: linear-gradient(135deg, #065f46 0%, #047857 100%);
-          border-radius: 12px;
-          border: 1px solid #10b981;
-          text-align: center;
+          padding: 20px;
+          border-radius: 16px;
+          background: linear-gradient(135deg, #0f3b2f 0%, #147a5a 60%, #23c686 100%);
+          border: 1px solid rgba(101, 240, 163, 0.4);
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          color: #f0fff7;
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
         }
 
-        .final-complaint-button {
-          width: 100%;
-          padding: 12px 20px;
-          background: #10b981;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
+        .tone-header {
           display: flex;
           align-items: center;
-          justify-content: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .tone-eyebrow {
+          margin: 0;
+          font-size: 12px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          opacity: 0.85;
+        }
+
+        .tone-title {
+          margin: 4px 0 0 0;
+          font-size: 20px;
+          color: #ffffff;
+        }
+
+        .tone-badge {
+          padding: 4px 12px;
+          border-radius: 999px;
+          background: rgba(15, 23, 42, 0.3);
+          border: 1px solid rgba(240, 255, 247, 0.4);
+          font-size: 12px;
+          font-weight: 600;
+          white-space: nowrap;
+        }
+
+        .tone-label {
+          font-size: 13px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .tone-select-wrapper {
+          display: flex;
+          flex-direction: column;
           gap: 8px;
         }
 
-        .final-complaint-button:hover:not(.disabled) {
-          background: #059669;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        .tone-select {
+          appearance: none;
+          width: 100%;
+          padding: 12px 16px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          background: rgba(0, 0, 0, 0.25);
+          color: #ffffff;
+          font-size: 14px;
+          font-weight: 600;
+          outline: none;
+          cursor: pointer;
+          transition: border-color 0.2s ease, background 0.2s ease;
         }
 
-        .final-complaint-button.disabled {
-          background: #6b7280;
+        .tone-select:hover {
+          border-color: #ffffff;
+          background: rgba(0, 0, 0, 0.35);
+        }
+
+        .tone-select:focus {
+          border-color: #ffffff;
+          box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+        }
+
+        .tone-description-text {
+          font-size: 13px;
+          color: rgba(240, 255, 247, 0.95);
+        }
+
+        .custom-tone-group {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .custom-tone-input {
+          width: 100%;
+          border-radius: 12px;
+          border: 1px dashed rgba(255, 255, 255, 0.5);
+          background: rgba(0, 0, 0, 0.25);
+          color: #ffffff;
+          padding: 10px 14px;
+          font-size: 14px;
+          outline: none;
+          resize: none;
+          min-height: 70px;
+        }
+
+        .custom-tone-input:focus {
+          border-color: #ffffff;
+        }
+
+        .custom-tone-hint {
+          margin: 0;
+          font-size: 12px;
+          color: rgba(240, 255, 247, 0.8);
+        }
+
+        .tone-hint {
+          margin: 0;
+          font-size: 13px;
+          color: rgba(240, 255, 247, 0.95);
+          font-weight: 500;
+        }
+
+        .tone-analyze-button {
+          margin-top: 8px;
+          width: 100%;
+          border: none;
+          border-radius: 12px;
+          padding: 12px 16px;
+          background: #ffffff;
+          color: #0f3b2f;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+        }
+
+        .tone-analyze-button:hover:not(.disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .tone-analyze-button.disabled {
+          opacity: 0.5;
           cursor: not-allowed;
           transform: none;
           box-shadow: none;
         }
+        .emotion-section {
+          margin-top: 20px;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
 
-        .final-complaint-hint {
-          margin: 12px 0 0 0;
-          color: #d1fae5;
-          font-size: 14px;
+        .emotion-header {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .emotion-question {
+          margin: 0;
+          color: #ffffff;
+          font-size: 16px;
+          font-weight: 600;
+        }
+
+        .emotion-instruction {
+          margin: 4px 0 0 0;
+          color: #a1a1aa;
+          font-size: 13px;
+        }
+
+        .emotion-card {
+          background: #1a1a1c;
+          border: 1px solid #2f2f33;
+          border-radius: 18px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          width: 100%;
+        }
+
+        .selected-emotions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          min-height: 28px;
+        }
+
+        .selected-emotion-chip {
+          background: rgba(101, 240, 163, 0.15);
+          color: #65f0a3;
+          border-radius: 999px;
+          padding: 4px 12px;
+          font-size: 13px;
           font-weight: 500;
         }
 
-        .generate-guide-hint {
-          margin: 16px 0 0 0;
-          color: #65f0a3;
-          font-size: 14px;
-          font-weight: 600;
-          padding: 12px;
-          background: rgba(101, 240, 163, 0.1);
-          border-radius: 8px;
-          border: 1px solid rgba(101, 240, 163, 0.3);
-          text-align: center;
+        .selected-placeholder {
+          color: #6b7280;
+          font-size: 13px;
         }
+
+        .emotion-options {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .emotion-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 14px;
+          border-radius: 999px;
+          border: 1px solid #333338;
+          background: transparent;
+          color: #e4e4e7;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .emotion-chip:hover {
+          border-color: #65f0a3;
+          color: #65f0a3;
+        }
+
+        .emotion-chip.selected {
+          background: #ffffff;
+          color: #111;
+          border-color: #ffffff;
+          font-weight: 600;
+        }
+
+        .emotion-chip.add-chip {
+          border-style: dashed;
+        }
+
+        .emotion-emoji {
+          font-size: 14px;
+        }
+
+        .custom-emotion-row {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+
+        .custom-emotion-input {
+          flex: 1;
+          background: #0d0d0f;
+          border: 1px solid #2f2f33;
+          border-radius: 8px;
+          padding: 8px 12px;
+          color: #fff;
+          font-size: 13px;
+        }
+
+        .custom-emotion-input::placeholder {
+          color: #6b7280;
+        }
+
+        .save-custom-emotion {
+          border: none;
+          border-radius: 8px;
+          padding: 8px 16px;
+          background: #65f0a3;
+          color: #111;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.2s ease;
+        }
+
+        .save-custom-emotion:hover {
+          background: #52d18a;
         }
       `}</style>
     </div>

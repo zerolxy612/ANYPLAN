@@ -16,7 +16,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
   onGenerateNext,
   viewport
 }) => {
-  const { generateChildren, loading, originalPrompt, mainConcerns } = useCanvasStore();
+  const { generateChildren, loading, originalPrompt, mainConcerns, emotionTags } = useCanvasStore();
   const zoom = viewport?.zoom || 1;
   const offsetX = viewport?.x || 0;
   const offsetY = viewport?.y || 0;
@@ -192,10 +192,40 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
             color: '#a1a1aa',
             marginBottom: '4px',  // 减少标题和内容之间的间距
             fontWeight: '500',
+            alignSelf: 'flex-start'
           }}
         >
           Main Concerns
         </div>
+
+        {emotionTags.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '8px',
+              width: '100%',
+              marginBottom: '8px',
+              justifyContent: 'flex-start'
+            }}
+          >
+            {emotionTags.map((tag) => (
+              <span
+                key={tag}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '999px',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: '#d1d5db',
+                  fontSize: `${10 * zoom}px`,
+                  backgroundColor: 'rgba(0,0,0,0.25)'
+                }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* 内容 */}
         <div
