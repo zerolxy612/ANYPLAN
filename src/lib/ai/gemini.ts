@@ -5,6 +5,7 @@ import {
   AIServiceError,
   AnalysisRequest,
   LevelGenerationResult,
+  MainConcernsResult,
   NodeExpansionRequest,
   NodeExpansionResult,
   ReportGenerationRequest,
@@ -24,7 +25,12 @@ import {
 const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
 const GEMINI_API_URL =
   process.env.NEXT_PUBLIC_GEMINI_API_URL ||
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
+
+const extractModelNameFromUrl = (apiUrl: string): string => {
+  const match = apiUrl.match(/\/models\/([^:]+):/);
+  return match?.[1] || 'unknown';
+};
 
 // Gemini API配置
 const DEFAULT_CONFIG: AIServiceConfig = {
@@ -82,7 +88,30 @@ class GeminiService {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        let responseBody: unknown = null;
+
+        try {
+          responseBody = await response.json();
+        } catch {
+          try {
+            responseBody = await response.text();
+          } catch {
+            responseBody = null;
+          }
+        }
+
+        const apiMessage = this.extractApiErrorMessage(responseBody);
+        throw this.createError(
+          'API_ERROR',
+          apiMessage || `API request failed: ${response.status} ${response.statusText}`,
+          {
+            status: response.status,
+            statusText: response.statusText,
+            apiUrl: this.config.apiUrl,
+            model: extractModelNameFromUrl(this.config.apiUrl),
+            responseBody,
+          }
+        );
       }
 
       const data: GeminiResponse = await response.json();
@@ -95,19 +124,69 @@ class GeminiService {
       return content;
 
     } catch (error) {
+      if (this.isAIServiceError(error)) {
+        throw error;
+      }
+
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          throw this.createError('TIMEOUT_ERROR', 'Request timeout');
+          throw this.createError('TIMEOUT_ERROR', 'Request timeout', {
+            apiUrl: this.config.apiUrl,
+            model: extractModelNameFromUrl(this.config.apiUrl),
+          });
         }
-        throw this.createError('NETWORK_ERROR', error.message);
+
+        throw this.createError('NETWORK_ERROR', error.message, {
+          apiUrl: this.config.apiUrl,
+          model: extractModelNameFromUrl(this.config.apiUrl),
+        });
       }
-      throw this.createError('API_ERROR', 'Unknown error occurred');
+
+      throw this.createError('API_ERROR', 'Unknown error occurred', {
+        apiUrl: this.config.apiUrl,
+        model: extractModelNameFromUrl(this.config.apiUrl),
+      });
     }
   }
 
   // 创建错误对象
   private createError(code: AIServiceError['code'], message: string, details?: Record<string, unknown>): AIServiceError {
     return { code, message, details };
+  }
+
+  private isAIServiceError(error: unknown): error is AIServiceError {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      'message' in error
+    );
+  }
+
+  private extractApiErrorMessage(responseBody: unknown): string | null {
+    if (typeof responseBody === 'string' && responseBody.trim()) {
+      return responseBody.trim();
+    }
+
+    if (typeof responseBody !== 'object' || responseBody === null) {
+      return null;
+    }
+
+    const record = responseBody as Record<string, unknown>;
+    const errorValue = record.error;
+
+    if (typeof errorValue === 'object' && errorValue !== null) {
+      const apiError = errorValue as Record<string, unknown>;
+      if (typeof apiError.message === 'string' && apiError.message.trim()) {
+        return apiError.message.trim();
+      }
+    }
+
+    if (typeof record.message === 'string' && record.message.trim()) {
+      return record.message.trim();
+    }
+
+    return null;
   }
 
   // 解析JSON响应
@@ -143,8 +222,8 @@ class GeminiService {
 
       return result;
     } catch (error) {
-      if (error instanceof Error && 'code' in error) {
-        throw error; // 重新抛出AIServiceError
+      if (this.isAIServiceError(error)) {
+        throw error;
       }
       throw this.createError('API_ERROR', error instanceof Error ? error.message : 'Analysis failed');
     }
@@ -170,7 +249,7 @@ class GeminiService {
 
       return result;
     } catch (error) {
-      if (error instanceof Error && 'code' in error) {
+      if (this.isAIServiceError(error)) {
         throw error;
       }
       throw this.createError('API_ERROR', error instanceof Error ? error.message : 'Node expansion failed');
@@ -178,7 +257,7 @@ class GeminiService {
   }
 
   // 提取主要关注点
-  async extractMainConcerns(userInput: string): Promise<string> {
+  async extractMainConcerns(userInput: string): Promise<MainConcernsResult> {
     try {
       if (!userInput.trim()) {
         throw this.createError('API_ERROR', 'User input cannot be empty');
@@ -186,16 +265,17 @@ class GeminiService {
 
       const prompt = EXTRACT_MAIN_CONCERNS_PROMPT(userInput);
       const response = await this.sendRequest(prompt);
+      const parsed = this.parseJSONResponse<Partial<MainConcernsResult>>(response);
+      const title = parsed.title?.trim();
+      const summary = parsed.summary?.trim();
 
-      const mainConcerns = response.trim();
-
-      if (!mainConcerns) {
-        throw new Error('Empty main concerns generated');
+      if (!title || !summary) {
+        throw new Error('Invalid main concerns response structure');
       }
 
-      return mainConcerns;
+      return { title, summary };
     } catch (error) {
-      if (error instanceof Error && 'code' in error) {
+      if (this.isAIServiceError(error)) {
         throw error;
       }
       throw this.createError('API_ERROR', error instanceof Error ? error.message : 'Main concerns extraction failed');
@@ -232,7 +312,7 @@ class GeminiService {
 
       return complaintContent;
     } catch (error) {
-      if (error instanceof Error && 'code' in error) {
+      if (this.isAIServiceError(error)) {
         throw error;
       }
       throw this.createError('API_ERROR', error instanceof Error ? error.message : 'Progressive complaint generation failed');
@@ -305,7 +385,7 @@ class GeminiService {
         }
       };
     } catch (error) {
-      if (error instanceof Error && 'code' in error) {
+      if (this.isAIServiceError(error)) {
         throw error;
       }
       throw this.createError('API_ERROR', error instanceof Error ? error.message : 'Report generation failed');
@@ -388,7 +468,7 @@ class GeminiService {
 
       return finalAnalysis;
     } catch (error) {
-      if (error instanceof Error && 'code' in error) {
+      if (this.isAIServiceError(error)) {
         throw error;
       }
       throw this.createError('API_ERROR', error instanceof Error ? error.message : 'Final analysis generation failed');

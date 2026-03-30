@@ -20,6 +20,40 @@ import { geminiService } from '@/lib/ai/gemini';
 import { CHATBOT_RESPONSE_TEMPLATE } from '@/lib/ai/prompts';
 import { downloadFile, createSnapshotFilename } from '@/lib/utils/file';
 import { LetterToneKey, findToneOption } from '@/constants/letterTones';
+
+const getAIErrorMessage = (error: unknown): string => {
+  if (typeof error !== 'object' || error === null) {
+    return 'Unknown AI error';
+  }
+
+  const maybeError = error as { message?: unknown; code?: unknown; details?: unknown };
+  const message = typeof maybeError.message === 'string' ? maybeError.message : 'Unknown AI error';
+
+  if (typeof maybeError.details === 'object' && maybeError.details !== null) {
+    const details = maybeError.details as { status?: unknown; model?: unknown };
+    const status = typeof details.status === 'number' ? ` [${details.status}]` : '';
+    const model = typeof details.model === 'string' ? ` (${details.model})` : '';
+    return `${message}${status}${model}`;
+  }
+
+  return message;
+};
+
+const FALLBACK_MAIN_CONCERN_TITLE = 'Complaint issue';
+
+const createDisplayMainConcernTitle = (text: string): string => {
+  const normalized = text
+    .replace(/\s+/g, ' ')
+    .replace(/[^\p{L}\p{N}\s'-]/gu, ' ')
+    .trim();
+
+  if (!normalized) {
+    return FALLBACK_MAIN_CONCERN_TITLE;
+  }
+
+  const words = normalized.split(' ').filter(Boolean);
+  return words.slice(0, 6).join(' ');
+};
 // AI helper functions - using real Gemini API
 const analyzeUserInput = async (userInput: string, existingLevels?: Array<{level: number, description: string}>) => {
   try {
@@ -35,7 +69,7 @@ const analyzeUserInput = async (userInput: string, existingLevels?: Array<{level
       originalPrompt: userInput
     };
   } catch (error) {
-    console.error('AI analysis failed, using fallback:', error);
+    console.error('AI analysis failed, using fallback:', getAIErrorMessage(error), error);
     // 降级处理：返回默认结构
     return {
       levelCount: 3,
@@ -67,11 +101,11 @@ const expandNodeContent = async (
       userPrompt
     });
     return result;
-  } catch (error) {
-    console.error('Node expansion failed, using fallback:', error);
-    // Fallback: return default child nodes, generate different content based on level
-    const fallbackContent = generateFallbackContent(nodeContent, nodeLevel);
-    return {
+    } catch (error) {
+      console.error('Node expansion failed, using fallback:', getAIErrorMessage(error), error);
+      // Fallback: return default child nodes, generate different content based on level
+      const fallbackContent = generateFallbackContent(nodeContent, nodeLevel);
+      return {
       children: fallbackContent
     };
   }
@@ -119,8 +153,8 @@ const generateFallbackContent = (nodeContent: string, nodeLevel: number): Array<
   }
 };
 
-const generateChatBotResponse = (mainConcerns: string): string => {
-  return CHATBOT_RESPONSE_TEMPLATE(mainConcerns);
+const generateChatBotResponse = (mainConcernTitle: string, mainConcernsSummary: string): string => {
+  return CHATBOT_RESPONSE_TEMPLATE(mainConcernTitle, mainConcernsSummary);
 };
 
 // 层级区域布局函数 - 只用于L2及后续层级
@@ -299,6 +333,7 @@ interface CanvasStore {
   levels: AILevel[];
   currentLevel: number;
   originalPrompt: string;
+  mainConcernTitle: string;
   mainConcerns: string; // 提取的主要关注点
   isAIGenerating: boolean;
 
@@ -498,6 +533,7 @@ export const useCanvasStore = create<CanvasStore>()(
     levels: [],
     currentLevel: 1,
     originalPrompt: '',
+    mainConcernTitle: '',
     mainConcerns: '', // 初始为空
     isAIGenerating: false,
 
@@ -940,8 +976,16 @@ export const useCanvasStore = create<CanvasStore>()(
 
         // 同时提取主要关注点
         console.log('🔍 Extracting main concerns...');
-        const mainConcerns = await geminiService.extractMainConcerns(userInput);
-        console.log('📝 Main concerns extracted:', mainConcerns);
+        let mainConcernTitle = createDisplayMainConcernTitle(userInput);
+        let mainConcerns = userInput.trim();
+        try {
+          const extractedMainConcerns = await geminiService.extractMainConcerns(userInput);
+          mainConcernTitle = extractedMainConcerns.title;
+          mainConcerns = extractedMainConcerns.summary;
+          console.log('📝 Main concerns extracted:', extractedMainConcerns);
+        } catch (error) {
+          console.error('Main concerns extraction failed, using input as fallback:', getAIErrorMessage(error), error);
+        }
 
         set((state) => {
           // 设置层级信息
@@ -961,6 +1005,7 @@ export const useCanvasStore = create<CanvasStore>()(
 
           // 设置原始提示和主要关注点
           state.originalPrompt = analysisResult.originalPrompt;
+          state.mainConcernTitle = mainConcernTitle;
           state.mainConcerns = mainConcerns;
         });
 
@@ -968,12 +1013,12 @@ export const useCanvasStore = create<CanvasStore>()(
         console.log('🚀 Calling generateInitialNodes...');
         useCanvasStore.getState().generateInitialNodes(analysisResult);
 
-        return generateChatBotResponse(mainConcerns);
+        return generateChatBotResponse(mainConcernTitle, mainConcerns);
 
       } catch (error) {
         set((state) => {
           state.error = {
-            message: error instanceof Error ? error.message : 'AI analysis failed',
+            message: getAIErrorMessage(error),
             type: 'generation',
             timestamp: new Date(),
           };

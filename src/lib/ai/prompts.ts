@@ -91,7 +91,9 @@ ${getCurrentTimeContext()}
 
 **IMPORTANT: ALL OUTPUT MUST BE IN ENGLISH** - Generate all content in English regardless of the input language.
 
-As a professional complaint analysis specialist, carefully analyze the user's complaint input and create a comprehensive yet concise summary of their main concerns. This summary will serve as the foundation for building their complaint letter.
+As a professional complaint analysis specialist, carefully analyze the user's complaint input and produce:
+1. a short display title for the canvas root node
+2. a concise professional summary for complaint drafting
 
 **User Input:** "${userInput}"
 
@@ -115,11 +117,14 @@ Extract and synthesize the core issues into a clear, professional summary that c
    - What would make this situation right?
 
 **Output Requirements:**
-- Create a 2-3 sentence professional summary that captures the essence of their complaint
+- Create a short display title in 2-6 English words
+- Create a 1-2 sentence professional summary that captures the essence of their complaint
 - Use clear, objective language suitable for formal complaint documentation
 - Focus on the most significant issues that strengthen their case
 - Avoid emotional language while acknowledging the user's legitimate concerns
 - Structure the summary to flow logically from problem → impact → expectation
+- The title must be easy to scan in a small UI card and must not be a full sentence
+- The summary must be concise enough for chat UI and complaint context
 
 **Quality Standards:**
 - Professional tone appropriate for business correspondence
@@ -127,10 +132,13 @@ Extract and synthesize the core issues into a clear, professional summary that c
 - Emphasize the strongest aspects of their case
 - Use language that positions the user as a reasonable complainant seeking fair resolution
 
-**Example of Strong Summary:**
-"The premium delivery service failed to meet the guaranteed 24-hour timeline, arriving 5 days late and causing you to miss an important business presentation. The package arrived damaged with inadequate protection, suggesting poor handling procedures that compromise product quality and customer trust. You expect the company to acknowledge this service failure, provide appropriate compensation, and implement measures to prevent similar issues for future customers."
+**Example Output:**
+{
+  "title": "Delivery service failure",
+  "summary": "The premium delivery service missed its guaranteed 24-hour timeline and caused a material disruption to your planned use. You expect the company to acknowledge the failure, explain what went wrong, and provide fair compensation or corrective action."
+}
 
-**CRITICAL**: Return ONLY the plain text summary, no JSON, no formatting, no quotes.
+**CRITICAL**: Return ONLY valid JSON with exactly these keys: "title" and "summary". No markdown, no extra text.
 **LANGUAGE REQUIREMENT**: Respond entirely in English, regardless of the input language.
 `;
 
@@ -430,9 +438,11 @@ Important Reminders:
 `;
 
 // ChatBot response template for complaint letter assistance
-export const CHATBOT_RESPONSE_TEMPLATE = (mainConcerns: string) => `
-I can see your main concerns:
-${mainConcerns}
+export const CHATBOT_RESPONSE_TEMPLATE = (mainConcernTitle: string, mainConcernsSummary: string) => `
+I understand the core issue: ${mainConcernTitle}.
+
+Summary:
+${mainConcernsSummary}
 
 To make your complaint letter stronger, let's organize these points clearly. On the canvas panel, please add:
 Event timeline: When you ordered, what was promised, and when it actually arrived.

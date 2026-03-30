@@ -26,14 +26,14 @@ import ButtonToNodeConnections from './ButtonToNodeConnections';
 
 
 // 节点类型映射
-const nodeTypes = {
+const nodeTypes = Object.freeze({
   keyword: KeywordNode,
-};
+});
 
 // 边类型映射
-const edgeTypes = {
+const edgeTypes = Object.freeze({
   default: DefaultEdge,
-};
+});
 
 interface CanvasProps {
   className?: string;

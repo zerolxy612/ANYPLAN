@@ -87,6 +87,11 @@ export interface NodeExpansionResult {
   }[];
 }
 
+export interface MainConcernsResult {
+  title: string;
+  summary: string;
+}
+
 // AI服务配置
 export interface AIServiceConfig {
   apiKey: string;

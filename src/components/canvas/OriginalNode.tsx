@@ -16,7 +16,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
   onGenerateNext,
   viewport
 }) => {
-  const { generateChildren, loading, originalPrompt, mainConcerns, emotionTags } = useCanvasStore();
+  const { generateChildren, loading, originalPrompt, mainConcernTitle, mainConcerns, emotionTags } = useCanvasStore();
   const zoom = viewport?.zoom || 1;
   const offsetX = viewport?.x || 0;
   const offsetY = viewport?.y || 0;
@@ -195,7 +195,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
             alignSelf: 'flex-start'
           }}
         >
-          Main Concerns
+          Main Concern
         </div>
 
         {emotionTags.length > 0 && (
@@ -230,7 +230,7 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
         {/* 内容 */}
         <div
           style={{
-            fontSize: `${12 * zoom}px`,
+            fontSize: `${14 * zoom}px`,
             color: '#ffffff',
             fontWeight: '600',
             textAlign: 'center',
@@ -238,11 +238,11 @@ const OriginalNode: React.FC<OriginalNodeProps> = ({
             padding: '4px',
             width: '100%',
             boxSizing: 'border-box',
-            whiteSpace: 'pre-wrap', // 直接显示完整内容，支持换行
+            whiteSpace: 'pre-wrap',
             wordBreak: 'break-word'
           }}
         >
-          {mainConcerns || content}
+          {mainConcernTitle || mainConcerns || content}
         </div>
       </div>
 

@@ -542,7 +542,7 @@ const ChatPanel = () => {
             <div className="input-footer">
               <div className="footer-left">
                 <div className="model-info">
-                  <span className="model-name">Gemini 2.0</span>
+                  <span className="model-name">Gemini 3.0 Flash Preview</span>
                 </div>
 
               </div>
